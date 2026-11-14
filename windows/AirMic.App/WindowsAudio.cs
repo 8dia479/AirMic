@@ -5,6 +5,11 @@ namespace AirMic.App;
 
 internal sealed record AudioEndpoint(string Id, string Name, bool Capture, bool IsAirMic)
 {
+    // VB-CABLE playback endpoint ("CABLE Input") routes audio to its paired
+    // recording endpoint ("CABLE Output"), which conferencing apps can select.
+    public bool IsVirtualCable => Name.Contains("CABLE Input", StringComparison.OrdinalIgnoreCase)
+        || Name.Contains("CABLE Output", StringComparison.OrdinalIgnoreCase)
+        || Name.Contains("VB-Audio Virtual Cable", StringComparison.OrdinalIgnoreCase);
     public override string ToString() => Name;
 }
 
