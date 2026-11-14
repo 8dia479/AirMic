@@ -72,8 +72,8 @@ CI에서 실행하거나 대상 Windows에서 설치·제거한 것은 아닙니
 이 Linux 작업 공간에는 dotnet/JDK/Android SDK/Windows/WDK가 없어 대상 빌드는
 GitHub Actions에서 수행했습니다. C++ history host tests는 이 환경에서도 직접 실행했습니다.
 
-현재 기록된 검증 source: `fd343e08c6a15bc0c9d01d15c3d2aaa6dfdab945`
-실행: <https://github.com/8dia479/AirMic/actions/runs/43592364935> — **7개 job 전체 성공**.
+현재 기록된 검증 source: `a025aa8ae60a890e51520936ea8538f9646f4c35`
+실행: <https://github.com/8dia479/AirMic/actions/runs/43592745698> — **7개 job 전체 성공**.
 이후 변경은 해당 commit의 검증으로 대신하지 않으며 최종 검증 source/기록은 아래 결과 JSON에 남깁니다.
 
 | 검사 | 실제 결과 / 범위 |
