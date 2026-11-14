@@ -6,6 +6,15 @@ Push-Location $root
 try {
     & nuget restore driver/packages.config -PackagesDirectory driver/packages -NonInteractive
     if ($LASTEXITCODE -ne 0) { throw "WDK NuGet restore failed: $LASTEXITCODE" }
+    # NuGet WDK supplies tools without installing them on the machine-wide PATH.
+    # The StampInf MSBuild/Tracker task invokes stampinf.exe by name.
+    $stampInf = Get-ChildItem driver/packages -Filter stampinf.exe -Recurse | Select-Object -First 1
+    if (-not $stampInf) { throw 'Pinned NuGet WDK does not contain stampinf.exe.' }
+    $toolDirectories = Get-ChildItem driver/packages -File -Recurse |
+        Where-Object { $_.Name -in @('stampinf.exe','infverif.exe','Inf2Cat.exe','tracewpp.exe') } |
+        ForEach-Object { $_.Directory.FullName } | Sort-Object -Unique
+    $env:PATH = ($toolDirectories -join ';') + ';' + $env:PATH
+    Write-Host "Using WDK stamp tool: $($stampInf.FullName)"
     $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
     $msbuild = & $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
     if (-not $msbuild) { throw 'Native driver builds need a WDK-compatible Visual Studio C++ toolchain. App builds need only .NET.' }
