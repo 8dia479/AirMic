@@ -78,6 +78,8 @@ installs this development output, enables test signing or changes Secure Boot.
 - Set native `_NT_TARGET_VERSION=0x0A000008` (Windows 10 2004 / 19041) instead of the latest WDK default.
 - Exclude unused sample jack-description-3, audio-posture and hardware-resource-group handlers/types, which require newer Windows headers. AirMic advertises none of those properties.
 - Streams retain a strong adapter reference until timer/DPC quiescence and stream teardown. Adapter cleanup disables the bridge before subdevice removal.
-- Serialize DRM flag/history/DMA invalidation with the render position lock in a nonpaged helper. No DRM-compliant forwarding is claimed.
+- Serialize DRM flag/history/DMA invalidation with the render position lock in a nonpaged, noinline helper. Keep bridge lock bodies non-inlined; arm the render timer only after KS/bridge state is set. No DRM-compliant forwarding is claimed.
 - Preserve render RUN intent separately from power state; power-down discards all history and ignores late writes, power-up starts with a fresh generation.
 - These changes still require actual Driver Verifier, power, PnP/removal and multi-client validation on Windows; host-header tests cannot establish those properties.
+
+- The render endpoint is marked ineligible as a Windows default for console, multimedia and communications roles (`NeverSetAsDefaultEndpoint=0x107`). The GUI selects it explicitly; capture remains selectable as a microphone.

@@ -1202,21 +1202,7 @@ NTSTATUS CMiniportWaveRTStream::SetState
             ullPerfCounterTemp = KeQueryPerformanceCounter(&m_ullPerformanceCounterFrequency);
             m_ullLastDPCTimeStamp = m_ullDmaTimeStamp = KSCONVERT_PERFORMANCE_TIME(m_ullPerformanceCounterFrequency.QuadPart, ullPerfCounterTemp);
 
-            if (m_ulNotificationIntervalMs > 0)
-            {
-                // Set timer for 1 ms. This will cause DPC to run every 1 ms but driver will send out 
-                // notification events only after notification interval. This timer is used by Sysvad to 
-                // emulate hardware and send out notification event. Real hardware should not use this
-                // timer to fire notification event as it will drain power if the timer is running at 1 msec.
-                ExSetTimer
-                (
-                    m_pNotificationTimer,
-                    (-1) * HNSTIME_PER_MILLISECOND,
-                    HNSTIME_PER_MILLISECOND, // 1 ms 
-                    NULL
-                 );
-
-            }
+            // Arm only after bridge/cursor/KS state is committed below.
 
             break;
     }
@@ -1231,6 +1217,12 @@ NTSTATUS CMiniportWaveRTStream::SetState
         KeReleaseSpinLock(&m_PositionSpinLock, oldIrql);
     }
     m_KsState = State_;
+    if (State_ == KSSTATE_RUN && m_ulNotificationIntervalMs > 0)
+    {
+        // The sample's 1ms timer emulates hardware. It is not a measured latency
+        // or power guarantee; notify clients only at the negotiated interval.
+        ExSetTimer(m_pNotificationTimer, -HNSTIME_PER_MILLISECOND, HNSTIME_PER_MILLISECOND, NULL);
+    }
 
 #if defined(SYSVAD_BTH_BYPASS) || defined(SYSVAD_USB_SIDEBAND)
 Done:

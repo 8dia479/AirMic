@@ -25,6 +25,7 @@
 windows/AirMic.sln       C# solution — Visual Studio에서 열기
   AirMic.App/           WPF GUI / Windows WASAPI / 내장 드라이버 설치 경로
   AirMic.Core/          C# wire codec / 세션 / SPSC / 지터·PLC·ASRC / UDP
+  AirMic.Setup/         ZIP/설치 journal 검증 (관리자 작업 없는 portable 라이브러리)
   AirMic.Tests/         별도 테스트 패키지 없는 .NET console tests
 android/                Android Studio에서 열기
   app/src/main/         Kotlin UI / FGS / AudioRecord / DSP / UDP
@@ -71,6 +72,12 @@ PC와 같은 LAN에 연결해 GUI에 표시된 PC IPv4와 같은 포트를 입�
 
 ## 검증과 한계
 
+- C#/Kotlin/WPF와 **실제 전용 driver의 WDK build·미서명 SYS/INF/CAT 생성/검증**까지 CI 통과.
+  이는 Microsoft 정식 서명이나 실제 장치 설치/오디오 전달의 성공이 아닙니다.
+- 단일 EXE의 앱·driver 설치/복구/제거, 시작 메뉴, Private LAN 방화벽, runtime 고지 내장
+  코드를 작성했습니다. 관리자 OS 통합 동작은 아직 대상 Windows에서 검증하지 않았습니다.
+  정식 signed package가 있어야 설치 bundle을 publish할 수 있습니다.
+
 - 새 C#/Kotlin 코드의 실행 결과는 [전환 보고서](docs/MIGRATION_0_2.md)에 별도로 기록합니다.
   과거 C++ 348,731 checks/localhost soak를 새 코드의 통과 결과로 재사용하지 않습니다.
 - `AudioRecord`의 실제 형식/버퍼·기기 DSP, .NET GC/COM, WASAPI, 드라이버,
@@ -81,4 +88,4 @@ PC와 같은 LAN에 연결해 GUI에 표시된 PC IPv4와 같은 포트를 입�
 - v1은 암호화/인증이 없는 신뢰 LAN 전용입니다. 공용 Wi-Fi·인터넷·포트 포워딩에 노출하지 마세요.
 
 [빌드·실행 안내](docs/BUILD.md) · [프로토콜](docs/PROTOCOL.md) ·
-[지연 측정](docs/LATENCY.md) · [서드파티 고지](THIRD_PARTY_NOTICES.md)
+[지연 측정](docs/LATENCY.md) · [driver 수용 시험 계획](docs/WINDOWS_DRIVER_VALIDATION.md) · [서드파티 고지](THIRD_PARTY_NOTICES.md)

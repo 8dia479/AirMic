@@ -52,15 +52,32 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\publish_windows.ps1 
 
 이 EXE에는 .NET runtime이 포함되므로 실행 PC에 .NET을 별도 설치하지 않습니다.
 단, **드라이버 없는 수신 진단 EXE는 시스템 마이크가 아닙니다.** GUI에 명시합니다.
-저작권/런타임 고지는 배포 시 함께 보존해야 합니다.
+정확히 resolve된 .NET/WPF runtime pack의 라이선스·서드파티 고지와 AirMic/SysVAD 고지를
+EXE resource에 내장하고 artifact에도 복사합니다. 고지가 없는 경우 publish는 실패합니다.
+배포 시 해당 고지를 제거하지 마세요.
 
 완성된 단일 설치 패키지는 Microsoft 서명·검증된 `AirMic.inf/.cat/.sys`를 제공해야 만들 수 있습니다.
 `publish_windows.ps1 -DriverPackageDirectory <서명된패키지경로>`는 이를 검증·내장하는 경로이며,
 없으면 정상 제품처럼 publish하지 않고 실패합니다. 자세한 차단 상태는 [전환 보고서](MIGRATION_0_2.md).
 앱은 인터넷에서 VB-CABLE/미확인 driver를 내려받거나 부팅 보안 설정을 바꾸지 않습니다.
 
-GUI에서 내장 driver 설치를 선택할 때만 UAC 승인을 요청합니다. 설치 도중 Windows가
-재부팅을 요구할 수 있습니다. 일반 수신/청취 실행에는 관리자 권한이 필요 없습니다.
+### 정식 bundle의 설치 / 복구 / 제거 경로 (실제 OS 동작 미검증)
+
+- GUI의 **AirMic 설치 / 복구** 또는 `AirMic.exe --install`에서만 UAC 승인을 요청합니다.
+- 같은 EXE가 `%ProgramFiles%\AirMic\Versions\<EXE-SHA256>`에 앱/runtime 고지를 복사하고,
+  내장 전용 driver를 Windows SetupAPI/PnP로 적용합니다. 시작 메뉴/Apps & Features와
+  Private + LocalSubnet + 해당 EXE + UDP 방화벽 규칙을 등록하는 코드입니다.
+- 설치 journal에 후보 파일·pending 상태를 먼저 기록하고 driver 성공 후 앱 버전을 commit합니다.
+  중간 실패 시 이전 앱 경로와 복구용 EXE/driver OEM 기록을 보존합니다.
+  driver를 자동 downgrade하거나 모든 PnP 변경이 원자적으로 rollback된다고 주장하지 않습니다.
+- 제거는 GUI의 **AirMic 제거**, Windows Apps & Features 또는 `AirMic.exe --uninstall`입니다.
+  정확한 AirMic 장치/driver만 대상으로 하고 사용 중인 package를 강제로 제거하지 않습니다.
+  사용자 설정은 보존합니다. 잠긴 EXE는 재부팅 정리하며, 같은 경로에 재설치하기 전 재부팅을 요구합니다.
+- 설치/제거 도중 Windows가 재부팅을 요구할 수 있습니다. 자동 재부팅이나 부팅 보안 변경은 없습니다.
+  일반 수신/청취 실행에는 관리자 권한이 필요 없습니다.
+
+이 관리자 설치/제거 경로는 **WPF build만 통과했으며 실제 Windows 설치 검증은 남았습니다**.
+[대상 기기 수용 시험 계획](WINDOWS_DRIVER_VALIDATION.md)을 통과하기 전 일반 사용자용 완성 제품이 아닙니다.
 
 ## 3. Android — 순수 Kotlin / AudioRecord
 
@@ -108,9 +125,37 @@ ignored `android/local.properties`에 `sdk.dir`를 지정합니다. NDK/JNI/ABI�
 연결 실패: PC IP/포트, Windows Private 방화벽, guest/AP 격리, VPN을 확인합니다.
 ACK RTT/endpoint reported latency는 E2E 지연이 아닙니다. [지연 측정](LATENCY.md).
 
-## 5. 테스트의 구분
+## 5. 전용 driver 유지관리자 빌드 — 앱 개발과 별개
 
-- `dotnet run --project windows/AirMic.Tests -c Release`: 새 managed core.
+**앱 개발자에게 C++/WDK 설치를 요구하는 단계가 아닙니다.** driver 자체를 수정/배포하는
+유지관리자만 WDK-compatible Visual Studio native C++ toolchain, x64 MSBuild 및 `nuget.exe`가 필요합니다.
+정확한 SDK/WDK `10.0.28000.2526`을 NuGet restore하며, restore/build 도구는 실행 PC에 배포하지 않습니다.
+
+```powershell
+.\tools\build_driver.ps1
+# build\driver\unsigned\AirMic.sys / AirMic.inf / AirMic.cat
+```
+
+Windows 10 19041 native target / KMDF 1.31, x64입니다. InfVerif/API/Inf2Cat 검증을 끄지 않습니다.
+CI에서 실제 compile과 unsigned catalog 생성/검증을 통과했지만 장치에 설치하지 않았습니다.
+이 산출물은 **미서명**이며 normal publish의 signed-package gate를 통과하지 못하는 것이 정상입니다.
+보안 기능 해제/테스트 모드로 사용하는 우회 안내는 하지 않습니다.
+
+유지관리자는 Microsoft 정식 driver 서명·검증 및 앱 배포 서명/검토를 완료한 뒤에만:
+
+```powershell
+.\tools\publish_windows.ps1 -DriverPackageDirectory C:\signed-airmic-driver
+# artifacts\windows\AirMic.exe
+```
+
+서명된 flat package의 Microsoft catalog signature와 kernel-policy INF/SYS coverage를 확인하므로
+`signtool.exe`가 PATH 또는 restore된 `driver/packages`에 필요합니다. 이는 production **driver
+패키징에만** 필요한 도구이며 .NET-only GUI/diagnostic build에는 필요하지 않습니다.
+원본·MS-PL·native 변경: [driver/UPSTREAM.md](../driver/UPSTREAM.md).
+
+## 6. 테스트의 구분
+
+- `dotnet run --project windows/AirMic.Tests -c Release`: 새 managed core, 합성 ZIP 검사, portable 설치 journal, 600초 가상 drift timelines. 실제 설치/600초 기기 soak 아님.
 - `:app:testDebugUnitTest`: 새 Kotlin wire/DSP/SPSC. 실제 AudioRecord는 검증하지 않음.
 - WPF `--smoke-ui`: 창을 생성·닫는 테스트. 오디오/driver 검증은 아님.
 - root CMake와 기존 Python 테스트: 0.1 reference/진단 도구. 새 앱의 통과 결과로 대체하지 않음.

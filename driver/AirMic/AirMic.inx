@@ -90,8 +90,8 @@ HKR,,CLSID,,%Proxy.CLSID%
 HKR,,FriendlyName,,%InputName%
 HKR,EP\0,%PKEY_AudioEndpoint_Association%,,%KSNODETYPE_ANY%
 HKR,EP\0,%PKEY_AudioEndpoint_Supports_EventDriven_Mode%,0x00010001,1
-; Never silently steal the user's default speaker role.
-HKR,EP\0,%PKEY_AudioDevice_NeverSetAsDefaultEndpoint%,0x00010001,0x00000105
+; Not eligible as default render endpoint for ANY role (manual or automatic).
+HKR,EP\0,%PKEY_AudioDevice_NeverSetAsDefaultEndpoint%,0x00010001,0x00000107
 
 [AirMic.TopologyMicrophone]
 AddReg=AirMic.TopologyMicrophone.AddReg

@@ -271,7 +271,7 @@ private:
     }
         
     _IRQL_requires_max_(DISPATCH_LEVEL)
-    VOID SetAirMicProtection(_In_ bool protectedContent);
+    __declspec(noinline) VOID SetAirMicProtection(_In_ bool protectedContent);
 
     VOID WriteBytes
     (

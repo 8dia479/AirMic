@@ -1,0 +1,113 @@
+{
+  "observedAtUtc": "2026-11-14T12:00:50.203765+00:00",
+  "validatedSourceCommit": "fd343e08c6a15bc0c9d01d15c3d2aaa6dfdab945",
+  "run": {
+    "conclusion": "success",
+    "createdAt": "2026-11-14T11:56:24Z",
+    "databaseId": 43592364935,
+    "headSha": "fd343e08c6a15bc0c9d01d15c3d2aaa6dfdab945",
+    "status": "completed",
+    "updatedAt": "2026-11-14T11:58:03Z",
+    "url": "https://github.com/8dia479/AirMic/actions/runs/43592364935"
+  },
+  "jobs": [
+    {
+      "name": "android",
+      "databaseId": 132439604193,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T11:56:27Z",
+      "completedAt": "2026-11-14T11:57:16Z"
+    },
+    {
+      "name": "driver-compile",
+      "databaseId": 132439604308,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T11:56:27Z",
+      "completedAt": "2026-11-14T11:57:16Z"
+    },
+    {
+      "name": "windows-gui",
+      "databaseId": 132439604313,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T11:56:27Z",
+      "completedAt": "2026-11-14T11:57:16Z"
+    },
+    {
+      "name": "managed-core (ubuntu-latest)",
+      "databaseId": 132439604325,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T11:56:27Z",
+      "completedAt": "2026-11-14T11:57:16Z"
+    },
+    {
+      "name": "legacy-reference",
+      "databaseId": 132439604338,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T11:56:27Z",
+      "completedAt": "2026-11-14T11:57:16Z"
+    },
+    {
+      "name": "driver-history",
+      "databaseId": 132439604354,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T11:56:27Z",
+      "completedAt": "2026-11-14T11:57:16Z"
+    },
+    {
+      "name": "managed-core (windows-latest)",
+      "databaseId": 132439604363,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T11:56:27Z",
+      "completedAt": "2026-11-14T11:57:16Z"
+    }
+  ],
+  "checkAnnotations": {
+    "android": [
+      {
+        "title": "",
+        "message": "Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/",
+        "annotation_level": "warning"
+      },
+      {
+        "title": "Kotlin tests",
+        "message": "{'tests': 3, 'failures': 0, 'errors': 0, 'skipped': 0}; APK and lint completed; AudioRecord hardware not tested",
+        "annotation_level": "notice"
+      }
+    ],
+    "driver-compile": [
+      {
+        "title": "",
+        "message": "Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/",
+        "annotation_level": "warning"
+      },
+      {
+        "title": "UNSIGNED WDK build",
+        "message": "SYS/INF/CAT generated; Win10 19041 + Win11 catalog validation passed. NO signing, installation or device test.\nAirMic.sys: 61440 bytes; SHA256=6FC25DF681B9DD60B7565F3FCF714A9F1777DF82B7A326767A3625DF00B1A0BE\nAirMic.inf: 4351 bytes; SHA256=EC77584F459EA182AA29AED53749F9E6E399C451FE2C37F11E6ED5549C638AFB\nAirMic.cat: 1115 bytes; SHA256=54DBD0800E214C1FDA7FBABB019725AA8E525E96BF836DA69B8B9DD9FD7BD6DB",
+        "annotation_level": "notice"
+      }
+    ],
+    "managed-core (windows-latest)": [
+      {
+        "title": "",
+        "message": "Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-dotnet@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/",
+        "annotation_level": "warning"
+      },
+      {
+        "title": "Managed core result",
+        "message": "Managed core allocation guard: 0 bytes / 2000 cycles (not WASAPI/CLR-wide)\nPASS: driver package validation (synthetic ZIP fixtures only; NOT driver signing or installation)\nPASS: install journal / interrupted upgrade recovery (portable state tests, NOT Windows install/uninstall)\nPASS: managed 600s VIRTUAL timeline, drift -200ppm; played=59987, peak buffered=2, correction=-151.52ppm (not measured E2E)\nPASS: managed 600s VIRTUAL timeline, drift 0ppm; played=59999, peak buffered=2, correction=-0.00ppm (not measured E2E)\nPASS: managed 600s VIRTUAL timeline, drift 200ppm; played=60010, peak buffered=3, correction=151.52ppm (not measured E2E)\nPASS: 116,436 managed checks",
+        "annotation_level": "notice"
+      }
+    ]
+  },
+  "localHistoryTests": {
+    "releaseChecks": 21559,
+    "asanUbsanChecks": 21559,
+    "scope": "actual portable kernel-history header; host only, not DDI/IRQL/device acceptance"
+  },
+  "limits": [
+    "Unsigned SYS/INF/CAT generated by CI, not a signed release",
+    "Artifact bytes were not independently downloaded or rehashed in this workspace; reported hashes are CI annotations",
+    "No driver installation, production signing, actual Windows device/audio, upgrade/uninstall/firewall integration or phone AudioRecord execution",
+    "600s managed tests use a virtual clock; physical 600s stability and E2E latency remain unmeasured"
+  ]
+}

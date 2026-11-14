@@ -22,8 +22,12 @@ VB-CABLE driver/app is bundled or required as a substitute for the planned AirMi
 driver. The retained `shared/` C++ code is a regression reference, not an app dependency.
 
 Self-contained Windows distributions must preserve .NET's accompanying license
-and third-party notices. `tools/publish_windows.ps1` copies the project's notices;
-release packaging must also include the notices supplied with its exact runtime.
+and third-party notices. `tools/publish_windows.ps1` resolves the exact .NET/WPF
+runtime packs used for that publish, fails if their legal notices are missing,
+and embeds those notices with the AirMic and SysVAD notices in the EXE. It also
+copies them beside the diagnostic artifact; the installed EXE extracts its own
+embedded notices next to its versioned application files. This packaging path
+is build-tested; actual privileged installation is not yet validated.
 The MIT .NET runtime licensing does not cover Windows itself, the proprietary
 Android/Windows SDK/WDK tools or third-party driver signing services.
 

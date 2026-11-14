@@ -6,6 +6,7 @@
 // cursors; PortCls/WASAPI mixes/shares user-mode clients. No user-mode IOCTL or
 // pointer, file/network I/O, work-item allocation, waits or floating point here.
 // All callers hold at most their own stream position lock, then this short lock.
+// Do not inline lock-taking bodies into pageable control-path callers.
 #pragma code_seg(push)
 #pragma code_seg()
 class AirMicBridge final {
@@ -15,28 +16,28 @@ public:
         history.Initialize();
     }
     _IRQL_requires_max_(DISPATCH_LEVEL)
-    void SetRunning(bool running) noexcept {
+    __declspec(noinline) void SetRunning(bool running) noexcept {
         KIRQL previous;
         KeAcquireSpinLock(&lock, &previous);
         history.SetRunning(running);
         KeReleaseSpinLock(&lock, previous);
     }
     _IRQL_requires_max_(DISPATCH_LEVEL)
-    void SetPowered(bool powered) noexcept {
+    __declspec(noinline) void SetPowered(bool powered) noexcept {
         KIRQL previous;
         KeAcquireSpinLock(&lock, &previous);
         history.SetPowered(powered);
         KeReleaseSpinLock(&lock, previous);
     }
     _IRQL_requires_max_(DISPATCH_LEVEL)
-    void Discontinuity() noexcept {
+    __declspec(noinline) void Discontinuity() noexcept {
         KIRQL previous;
         KeAcquireSpinLock(&lock, &previous);
         history.Discontinuity();
         KeReleaseSpinLock(&lock, previous);
     }
     _IRQL_requires_max_(DISPATCH_LEVEL)
-    void Write(_In_reads_(count) const SHORT* data, ULONG count) noexcept {
+    __declspec(noinline) void Write(_In_reads_(count) const SHORT* data, ULONG count) noexcept {
         NT_ASSERT(count <= airmic::AudioHistory::MaximumTransfer);
         KIRQL previous;
         KeAcquireSpinLock(&lock, &previous);
@@ -44,7 +45,7 @@ public:
         KeReleaseSpinLock(&lock, previous);
     }
     _IRQL_requires_max_(DISPATCH_LEVEL)
-    void Read(airmic::CaptureCursor& cursor, _Out_writes_(count) SHORT* data, ULONG count) noexcept {
+    __declspec(noinline) void Read(airmic::CaptureCursor& cursor, _Out_writes_(count) SHORT* data, ULONG count) noexcept {
         NT_ASSERT(count <= airmic::AudioHistory::MaximumTransfer);
         KIRQL previous;
         KeAcquireSpinLock(&lock, &previous);
