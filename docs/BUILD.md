@@ -163,3 +163,18 @@ CI에서 실제 compile과 unsigned catalog 생성/검증을 통과했지만 장
 - WPF `--smoke-ui`: 창을 생성·닫는 테스트. 오디오/driver 검증은 아님.
 - root CMake와 기존 Python 테스트: 0.1 reference/진단 도구. 새 앱의 통과 결과로 대체하지 않음.
 - [전환 보고서](MIGRATION_0_2.md), [현재 DSP 검증](DSP_PIPELINE.md) 및 CI 로그에 실제 수행/미수행 범위를 구분합니다.
+
+
+## 빠른 마이크 연결 — VB-CABLE 임시 경로
+
+전용 AirMic driver의 Microsoft 서명/설치가 끝나기 전에는 VB-Audio의 **VB-CABLE**을 선택적 브리지로 사용할 수 있습니다. VB-CABLE은 별도 설치가 필요하며 AirMic이 이를 자동 다운로드하거나 설치하지 않습니다.
+
+1. VB-Audio 공식 사이트에서 VB-CABLE을 설치하고 Windows를 재시작합니다(설치 프로그램이 요구하는 경우).
+2. AirMic Windows 앱에서 출력 장치 **[가상 마이크 케이블] CABLE Input (VB-Audio Virtual Cable)** 을 선택합니다.
+3. 수신 시작을 누릅니다.
+4. Discord/게임의 입력 장치를 **CABLE Output (VB-Audio Virtual Cable)** 로 설정합니다.
+5. Windows 녹음 장치 속성에서 CABLE Output 입력 레벨을 확인합니다.
+
+이 경로에서는 AirMic의 출력 음량이 마이크 레벨에 영향을 줍니다. 모니터링을 위해 CABLE Output을 스피커로 재생하면 에코/하울링이 생길 수 있으니 기본적으로 모니터링을 끄세요. 장치 이름이 다르거나 CABLE endpoint가 보이지 않으면 VB-CABLE 설치 상태를 확인하세요. 실제 Flip6 → Windows → Discord 전달은 사용자 PC에서 확인해야 합니다.
+
+공식 다운로드/설명: https://vb-audio.com/Cable/
