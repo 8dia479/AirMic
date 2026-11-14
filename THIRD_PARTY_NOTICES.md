@@ -1,6 +1,8 @@
 # Third-party components
 
-AirMic's own source is MIT licensed (see LICENSE). Upstream notices remain intact.
+AirMic-authored application/glue source is MIT licensed (see LICENSE). The selected
+Microsoft SysVAD driver fork is **MS-PL**, not MIT; upstream notices and its complete
+licence are preserved. See [driver provenance](driver/UPSTREAM.md).
 
 | Component | Source / exact version | License | Shipped here |
 |---|---|---|---|
@@ -8,6 +10,7 @@ AirMic's own source is MIT licensed (see LICENSE). Upstream notices remain intac
 | Kotlin / Android Gradle Plugin | Kotlin 2.0.21 / AGP 8.7.3 | Apache-2.0 | Build dependencies, not vendored |
 | NumPy | 2.2.6, https://github.com/numpy/numpy | BSD-3-Clause + bundled dependency notices | Optional developer WAV analysis dependency, not vendored |
 | .NET / WPF | .NET 10, https://github.com/dotnet/runtime and https://github.com/dotnet/wpf | MIT + runtime third-party notices | SDK/framework references; runtime bundled only in self-contained Windows publish |
+| SysVAD driver subset | https://github.com/microsoft/Windows-driver-samples, `d49bb7d72f3651952b2b6e4ad28d14fe2247eb69` | MS-PL | Selected source fork in `driver/sysvad/`; **native driver exception only**, not linked by C#/Kotlin app builds |
 | JUnit | 4.13.2, https://github.com/junit-team/junit4 | EPL-1.0 | Android JVM tests only; not bundled in APK |
 
 Apache-2.0 license text is in `docs/licenses/Apache-2.0.txt`. Gradle wrapper JAR SHA-256:

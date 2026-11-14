@@ -1,0 +1,13 @@
+<Project>
+  <!-- Native DRIVER ONLY: none of these packages/toolsets are used by windows/AirMic.sln. -->
+  <PropertyGroup>
+    <AirMicWdkVersion>10.0.28000.2526</AirMicWdkVersion>
+    <AirMicPackages>$(MSBuildThisFileDirectory)packages\</AirMicPackages>
+  </PropertyGroup>
+  <Import Project="$(AirMicPackages)Microsoft.Windows.WDK.x64.$(AirMicWdkVersion)\build\native\Microsoft.Windows.WDK.x64.props"
+          Condition="Exists('$(AirMicPackages)Microsoft.Windows.WDK.x64.$(AirMicWdkVersion)\build\native\Microsoft.Windows.WDK.x64.props')" />
+  <Import Project="$(AirMicPackages)Microsoft.Windows.SDK.CPP.x64.$(AirMicWdkVersion)\build\native\Microsoft.Windows.SDK.cpp.x64.props"
+          Condition="Exists('$(AirMicPackages)Microsoft.Windows.SDK.CPP.x64.$(AirMicWdkVersion)\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
+  <Import Project="$(AirMicPackages)Microsoft.Windows.SDK.CPP.$(AirMicWdkVersion)\build\native\Microsoft.Windows.SDK.cpp.props"
+          Condition="Exists('$(AirMicPackages)Microsoft.Windows.SDK.CPP.$(AirMicWdkVersion)\build\native\Microsoft.Windows.SDK.cpp.props')" />
+</Project>

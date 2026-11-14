@@ -1,0 +1,116 @@
+{
+  "repository": "https://github.com/microsoft/Windows-driver-samples",
+  "commit": "d49bb7d72f3651952b2b6e4ad28d14fe2247eb69",
+  "license": "MS-PL",
+  "normalization": "UTF-8 without BOM, LF line endings",
+  "files": [
+    {
+      "path": "audio/sysvad/adapter.cpp",
+      "originalSha256NormalizedLfUtf8": "70fe4d371151b4799857cd85cc3a83a7db8719e244546d97baa4910c833a2602"
+    },
+    {
+      "path": "audio/sysvad/basetopo.cpp",
+      "originalSha256NormalizedLfUtf8": "ad4f8d106f78317613301d958af79fcd223eb9ae65b9e3ada3f4c6e8707377dc"
+    },
+    {
+      "path": "audio/sysvad/basetopo.h",
+      "originalSha256NormalizedLfUtf8": "7810a9187528033cb5798e605e19105e2b0a3eaf2b624f432b1849ca6d5a3e72"
+    },
+    {
+      "path": "audio/sysvad/common.cpp",
+      "originalSha256NormalizedLfUtf8": "b32801ad8d3ace8e124783058a2ccb6be5cb8be5f5c4059558c28ef0b2e63bc7"
+    },
+    {
+      "path": "audio/sysvad/common.h",
+      "originalSha256NormalizedLfUtf8": "8e4a1e8cf9cd5906559ead8f667743617dba844cf4d48f4a7bb857e27ffe17ff"
+    },
+    {
+      "path": "audio/sysvad/hw.cpp",
+      "originalSha256NormalizedLfUtf8": "c3582eb9102f7554e2e12e70319cb7c4f00ac19710ddeeb58f8194b6993dcbd5"
+    },
+    {
+      "path": "audio/sysvad/hw.h",
+      "originalSha256NormalizedLfUtf8": "b204e36448b364c713da3151dce34c62b7328eb50f1f9494e2564a569d71617b"
+    },
+    {
+      "path": "audio/sysvad/kshelper.cpp",
+      "originalSha256NormalizedLfUtf8": "a6b2a95af22fd411bbe7b5988c5087a503c684dbc4e8faa32542d747c2c85cda"
+    },
+    {
+      "path": "audio/sysvad/kshelper.h",
+      "originalSha256NormalizedLfUtf8": "13472f133f00fb8acf5069dcb70c240218b0046d94df961c25570bd50f85373f"
+    },
+    {
+      "path": "audio/sysvad/sysvad.h",
+      "originalSha256NormalizedLfUtf8": "4e2304ca99e66f0e84b582995ef3205d6d16ecedae34cfc14bcbf1349bd01630"
+    },
+    {
+      "path": "audio/sysvad/SysVadShared.h",
+      "originalSha256NormalizedLfUtf8": "9d2eaad56cb5d98a6f0635ea5f5b0b2ae0ddf25e84a16569fa1359704aa26b89"
+    },
+    {
+      "path": "audio/sysvad/ContosoKeywordDetector.h",
+      "originalSha256NormalizedLfUtf8": "4958db43d08bc35518017dd30df09619f7c6868ee2bdcc883715afac0b7aa410"
+    },
+    {
+      "path": "audio/sysvad/UnittestData.h",
+      "originalSha256NormalizedLfUtf8": "515b31207e922ffe59754f5e7cf9e18b307d5e1ef06c6c6c6ce98ec2f64af98d"
+    },
+    {
+      "path": "audio/sysvad/ihvprivatepropertyset.h",
+      "originalSha256NormalizedLfUtf8": "e967bb20affc6e43efe7ed84d87935fa9577c53d7514b00b7f48bdb925f55f62"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/AudioModuleHelper.cpp",
+      "originalSha256NormalizedLfUtf8": "d066a0f99f1936fc75e48ad765f53017ce507a05f5535595365190cb23dcecdf"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/AudioModuleHelper.h",
+      "originalSha256NormalizedLfUtf8": "e4f22be32c54eb6a7cdd7ce9b3930cdcaef9ea89b269482d98a6f1c687bf2951"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/MiniportAudioEngineNode.cpp",
+      "originalSha256NormalizedLfUtf8": "95a45c623f606c33e1380224eae5569c66cf80eaf26a1c1ada13354d44024a06"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/MiniportStreamAudioEngineNode.cpp",
+      "originalSha256NormalizedLfUtf8": "b3d87297326f2a195c844df83d7690b4ad853439389d41b62dba443d8c2a6bce"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/minwavert.cpp",
+      "originalSha256NormalizedLfUtf8": "798de823e2de5609f63ee5b668366649583612887eeb1c8ad75064061ce5e7c2"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/minwavert.h",
+      "originalSha256NormalizedLfUtf8": "5d5c08f6d0e1bacdb799787b553153a30b5fac48ecd38955ff895ddcd414fe9d"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/minwavertstream.cpp",
+      "originalSha256NormalizedLfUtf8": "5c565c2f02dfa2a2fafa31b9acce0c0143724964656cd3ab95f3b57698043dd8"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/minwavertstream.h",
+      "originalSha256NormalizedLfUtf8": "e3558aab3705fa11c03c2388e20e9bfeeca24ba3d5285d5fae8f3e70ffddfddd"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/mintopo.cpp",
+      "originalSha256NormalizedLfUtf8": "d3dda21d307759c04a79f48abf2abcb17ad61d0cde611c3a9cc3a42d3e1dbd1f"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/mintopo.h",
+      "originalSha256NormalizedLfUtf8": "88201fcf31f78e19dcea36d8d0d7831672cff74c8973d55c1531921b29dc5656"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/NewDelete.cpp",
+      "originalSha256NormalizedLfUtf8": "d5838170c9151d293a7ebe87bf41edb5c5a4747e61bfcc7327f0526bfc2aa86e"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/NewDelete.h",
+      "originalSha256NormalizedLfUtf8": "f42b295c5a3499eaed8c910e1331f68c91adcfd60c95736c42ae1c1f62b034bc"
+    },
+    {
+      "path": "audio/sysvad/EndpointsCommon/simple.h",
+      "originalSha256NormalizedLfUtf8": "edb0aafc13640c218ca06a28be2c56fa2c16cd15ff7e94d1acf36bf71a566603"
+    }
+  ]
+}

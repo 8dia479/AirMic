@@ -1,0 +1,367 @@
+{
+  "conclusion": "success",
+  "headSha": "a1912b269ce3173c5a985b31d0381e30927d489b",
+  "jobs": [
+    {
+      "completedAt": "2026-11-14T11:24:32Z",
+      "conclusion": "success",
+      "databaseId": 132431953298,
+      "name": "managed-core (ubuntu-latest)",
+      "startedAt": "2026-11-14T11:23:48Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-dotnet@v4",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Managed protocol / jitter / UDP / allocation tests",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-dotnet@v4",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 11,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/8dia479/AirMic/actions/runs/43589817494/job/132431953298"
+    },
+    {
+      "completedAt": "2026-11-14T11:24:32Z",
+      "conclusion": "success",
+      "databaseId": 132431953408,
+      "name": "managed-core (windows-latest)",
+      "startedAt": "2026-11-14T11:23:47Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-dotnet@v4",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Managed protocol / jitter / UDP / allocation tests",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-dotnet@v4",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 11,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/8dia479/AirMic/actions/runs/43589817494/job/132431953408"
+    },
+    {
+      "completedAt": "2026-11-14T11:24:32Z",
+      "conclusion": "success",
+      "databaseId": 132431953472,
+      "name": "android",
+      "startedAt": "2026-11-14T11:23:48Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-java@v5",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Use runner Android SDK (no obsolete tools package, NDK or CMake)",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify Gradle wrapper",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Kotlin JVM tests / APK / lint",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-java@v5",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 15,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/8dia479/AirMic/actions/runs/43589817494/job/132431953472"
+    },
+    {
+      "completedAt": "2026-11-14T11:24:32Z",
+      "conclusion": "success",
+      "databaseId": 132431953517,
+      "name": "windows-gui",
+      "startedAt": "2026-11-14T11:23:48Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-dotnet@v4",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "WPF build (no C++ workload needed)",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Create and close actual WPF window (no audio hardware test)",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Publish standalone diagnostic executable (NO bundled driver)",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-dotnet@v4",
+          "number": 13,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 14,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 15,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/8dia479/AirMic/actions/runs/43589817494/job/132431953517"
+    },
+    {
+      "completedAt": "2026-11-14T11:24:32Z",
+      "conclusion": "success",
+      "databaseId": 132431953554,
+      "name": "legacy-reference",
+      "startedAt": "2026-11-14T11:23:48Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run cmake -S . -B build -DCMAKE_BUILD_TYPE=Release",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run cmake --build build --parallel 2",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run ctest --test-dir build --output-on-failure",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-python@v5",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run pip install -r tools/requirements-latency.txt",
+          "number": 7,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run python -m unittest discover -s tests -p 'python_test_*.py' -v",
+          "number": 8,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-python@v5",
+          "number": 15,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 16,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 17,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/8dia479/AirMic/actions/runs/43589817494/job/132431953554"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/8dia479/AirMic/actions/runs/43589817494",
+  "scope": "Application CI only; no physical audio, driver, phone, Secure Boot or end-to-end latency acceptance",
+  "managedWindowsNotice": "PASS: 116,436 managed checks; allocation guard 0 bytes / 2000 cycles (own core only)",
+  "driverHostTests": {
+    "dateUtc": "2026-11-14",
+    "source": "driver/AirMic/AudioHistory.h",
+    "release": {
+      "compiler": "G++ -std=c++17 -O2 -Wall -Wextra -Werror -pthread",
+      "checks": 21551,
+      "result": "passed"
+    },
+    "asanUbsan": {
+      "compiler": "G++ -std=c++17 -O1 -g -pthread -fsanitize=address,undefined -fno-omit-frame-pointer",
+      "checks": 21551,
+      "result": "passed"
+    },
+    "notVerified": [
+      "kernel compile",
+      "DDI/IRQL/concurrency under kernel",
+      "installation",
+      "hardware endpoints"
+    ]
+  }
+}

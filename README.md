@@ -29,6 +29,7 @@ windows/AirMic.sln       C# solution — Visual Studio에서 열기
 android/                Android Studio에서 열기
   app/src/main/         Kotlin UI / FGS / AudioRecord / DSP / UDP
   app/src/test/         Kotlin wire / DSP / SPSC 테스트
+driver/                 전용 native WaveRT driver 예외 (WDK/서명/장치 검증은 별도)
 shared/, tests/         0.1 C++ reference 회귀·Python 진단 (앱 빌드에는 사용하지 않음)
 docs/                   현재 빌드 안내, 전환 보고서, 프로토콜 및 과거 결과
 ```

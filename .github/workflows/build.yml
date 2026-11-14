@@ -110,6 +110,18 @@ jobs:
             python3 -c 'from pathlib import Path; s=Path("../android-build.log").read_text(); lines=[x for x in s.splitlines() if any(y in x for y in ("e: "," error:","Error:","What went wrong","Execution failed"))]; text="\n".join(lines or s.splitlines()[-35:])[-6000:]; print("::error title=Android build failure::"+text.replace("%","%25").replace("\n","%0A").replace("\r","%0D"))'
             exit "$result"
           fi
+          python3 - <<'PYTEST'
+          from pathlib import Path
+          import xml.etree.ElementTree as E
+          reports = list(Path('app/build/test-results/testDebugUnitTest').glob('TEST-*.xml'))
+          assert reports, 'No Kotlin JUnit test results produced'
+          counts = {key: 0 for key in ('tests','failures','errors','skipped')}
+          for report in reports:
+              root = E.parse(report).getroot()
+              for key in counts: counts[key] += int(root.get(key, '0'))
+          assert counts['tests'] >= 3 and counts['failures'] == counts['errors'] == 0, counts
+          print('::notice title=Kotlin tests::' + str(counts) + '; APK and lint completed; AudioRecord hardware not tested')
+          PYTEST
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -130,3 +142,40 @@ jobs:
           python-version: '3.11'
       - run: pip install -r tools/requirements-latency.txt
       - run: python -m unittest discover -s tests -p 'python_test_*.py' -v
+
+  driver-history:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Actual kernel history header / host regression + ASan + UBSan
+        run: |
+          mkdir -p build/driver-tests
+          g++ -std=c++17 -O1 -g -Wall -Wextra -Werror -pthread -fsanitize=address,undefined -fno-omit-frame-pointer driver/tests/audio_history_tests.cpp -o build/driver-tests/history
+          build/driver-tests/history
+  driver-compile:
+    # Same native toolchain family used by the pinned Microsoft driver-samples CI.
+    # This is deliberately separate from the managed app / Kotlin build jobs.
+    runs-on: windows-2025-vs2026
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build real AirMic render-to-capture driver / validate unsigned catalog
+        shell: pwsh
+        run: |
+          try {
+            ./tools/build_driver.ps1 *> driver-build.log
+            Get-Content driver-build.log
+          } catch {
+            Get-Content driver-build.log -ErrorAction SilentlyContinue
+            $lines = Get-Content driver-build.log -ErrorAction SilentlyContinue | Where-Object { $_ -match 'error|failed|Exception|warning' } | Select-Object -Last 25
+            $text = (($lines -join "`n") + "`n" + $_.Exception.Message)
+            $text = $text.Replace('%','%25').Replace("`r",'%0D').Replace("`n",'%0A')
+            Write-Host "::error title=Native driver build::$text"
+            exit 1
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AirMic-driver-UNSIGNED-NOT-A-RELEASE
+          path: |
+            driver-build.log
+            build/driver/unsigned/

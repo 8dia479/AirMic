@@ -29,21 +29,37 @@
 샘플 SysVAD의 사인파 출력 또는 일반 스피커 청취를 그 요구의 완료로 간주하지 않습니다.
 서명된 package가 없는 publish는 명시적인 `-DiagnosticOnly`만 허용하며 GUI도 미준비 상태를 표시합니다.
 
-실제 드라이버에는 전용 render→capture 전달, 제한된 버퍼/손실 정책, stream/power/장치 제거,
-형식 변환과 동시 접근, Windows 10/11 및 Secure Boot 정책 검증이 필요합니다.
+공식 SysVAD의 제한된 소스만 MS-PL 고지와 함께 `driver/sysvad/`에 분리했습니다.
+샘플 시험음/파일 녹음을 제거하고 `AirMic Input`→고정 PCM history→각 `AirMic Microphone`
+stream cursor 전달 코드, underrun 무음·지연 tail 폐기·정지/전원 generation 리셋,
+48 kHz mono PCM16 고정 형식, 전용 INF/WDK 빌드 경로를 작성했습니다.
+**이 코드는 아직 WDK/커널 장치 검증 전**입니다. 원본·수정 범위: [driver/UPSTREAM.md](../driver/UPSTREAM.md).
+Windows 10/11 실제 stream/power/장치 제거·Secure Boot 정책 및 형식 변환/동시 접근 검증이 필요합니다.
 정식 배포는 Microsoft driver signing 절차와 파일별 배포 고지를 통과해야 합니다.
 
 ## 빌드/검사 상태
 
-이 Linux 작업 공간에는 dotnet/JDK/Android SDK/Windows/WDK가 없습니다.
-새 managed/Kotlin source의 CI를 구성했지만 **아직 그 성공을 기록하지 않습니다**.
-확인된 CI 결과를 받은 뒤 아래를 갱신합니다. 기존 C++ 테스트 결과를 새 코드 결과로 복사하지 않습니다.
+이 Linux 작업 공간에는 dotnet/JDK/Android SDK/Windows/WDK가 없어 실제 대상 빌드는
+GitHub Actions에서 수행했습니다. 첫 Android SDK 준비 실패 후 runner의 SDK를 사용하도록
+고쳐 **앱 CI 전체 통과**를 확인했습니다.
+
+- 검증 commit: `a1912b269ce3173c5a985b31d0381e30927d489b`
+- 실행: <https://github.com/8dia479/AirMic/actions/runs/43589817494>
+- C# 코어 Windows/Linux 각각 통과; Windows 결과 **116,436 checks**, 코어 2,000 cycle
+  steady-state allocation guard **0 bytes** (CLR 전체/WASAPI까지 무할당이라는 뜻 아님).
+- WPF Release solution build, 실제 창 생성·닫기 smoke, self-contained 단일 diagnostic EXE publish 통과.
+- Android 순수 Kotlin JVM tests / debug APK / lint tasks 통과. AudioRecord 실제 실행은 미검증.
+- `AudioHistory.h` driver 코어는 이 Linux 환경에서 G++ Release와 ASan+UBSan 각각
+  **21,551 host checks 통과**. 이는 kernel/DDI/IRQL/endpoint 설치 검증이 아닙니다.
+- 별도 native-driver CI는 새 driver source build/Inf2Cat 검증을 위해 구성했고 결과 대기 중입니다.
+
+기존 C++ 테스트 결과를 새 코드 결과로 복사하지 않습니다.
 
 | 검사 | 상태 |
 |---|---|
-| C# Core 실제 build/test | 대기 |
-| Windows WPF build / 실제 창 smoke | 대기 |
-| Kotlin JVM test / APK / lint | 대기 |
+| C# Core 실제 build/test | Windows / Linux CI 통과 |
+| Windows WPF build / 실제 창 smoke | CI 통과 (오디오 장치 아님) |
+| Kotlin JVM test / APK / lint | CI 통과 (휴대폰 실행 아님) |
 | 전용 driver build / 설치 / 실제 PCM 전달 | 미검증 |
 | 실제 Z Flip6 / Windows / Wi-Fi / 소비 앱 600초 | 미실시 |
 | 새 경로 E2E·GC·발열·배터리 측정 | 미실시 |

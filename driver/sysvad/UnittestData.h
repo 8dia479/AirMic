@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: MS-PL
+// AirMic-maintained SysVAD subset; provenance and modifications: ../UPSTREAM.md.
+
+#ifndef _SYSVAD_UNITTESTDATA_H_
+#define _SYSVAD_UNITTESTDATA_H_
+
+#define WAVERT_CURRENT_WRITE_POSITION_DATA  100
+#define STREAM_PRESENTATION_POSITION_DATA  1000
+#define LINEAR_BUFFER_POSITION_DATA       10000
+
+
+#define BUFFER_SIZE_RANGE_MIN       1200390
+#define BUFFER_SIZE_RANGE_MAX       1200393
+
+#define MS_PER_SEC              1000
+#define MIN_BUFFER_DURATION_MS  10
+#define MAX_BUFFER_DURATION_MS  2000
+
+#endif  // _SYSVAD_UNITTESTDATA_H_

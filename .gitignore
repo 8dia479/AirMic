@@ -31,3 +31,7 @@ __pycache__/
 /windows/**/bin/
 /windows/**/obj/
 *.csproj.user
+
+# Native driver toolchain packages / local IDE metadata
+/driver/packages/
+*.vcxproj.user
