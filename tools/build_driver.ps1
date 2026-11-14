@@ -8,10 +8,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "WDK NuGet restore failed: $LASTEXITCODE" }
     # NuGet WDK supplies tools without installing them on the machine-wide PATH.
     # The StampInf MSBuild/Tracker task invokes stampinf.exe by name.
-    $stampInf = Get-ChildItem driver/packages -Filter stampinf.exe -Recurse | Select-Object -First 1
-    if (-not $stampInf) { throw 'Pinned NuGet WDK does not contain stampinf.exe.' }
+    $stampInf = Get-ChildItem driver/packages -Filter stampinf.exe -Recurse |
+        Where-Object { $_.FullName -match '\\(x64|amd64)\\stampinf\.exe$' } | Select-Object -First 1
+    if (-not $stampInf) { throw 'Pinned NuGet WDK does not contain an x64-host stampinf.exe.' }
     $toolDirectories = Get-ChildItem driver/packages -File -Recurse |
-        Where-Object { $_.Name -in @('stampinf.exe','infverif.exe','Inf2Cat.exe','tracewpp.exe') } |
+        Where-Object { $_.Name -in @('stampinf.exe','infverif.exe','Inf2Cat.exe','tracewpp.exe') -and $_.FullName -notmatch '\\(ARM64|ARM)\\' } |
         ForEach-Object { $_.Directory.FullName } | Sort-Object -Unique
     $env:PATH = ($toolDirectories -join ';') + ';' + $env:PATH
     Write-Host "Using WDK stamp tool: $($stampInf.FullName)"
@@ -29,7 +30,7 @@ try {
     Copy-Item $inf.FullName $output -Force
     # No test/production signing and no installation on the build host.
     $inf2cat = Get-ChildItem driver/packages -Filter Inf2Cat.exe -Recurse |
-        Sort-Object FullName | Select-Object -First 1
+        Where-Object { $_.FullName -notmatch '\\(ARM64|ARM)\\' } | Sort-Object FullName | Select-Object -First 1
     if (-not $inf2cat) { throw 'Inf2Cat not found in pinned WDK packages.' }
     & $inf2cat.FullName "/driver:$output" '/os:10_VB_X64,10_NI_X64' /uselocaltime
     if ($LASTEXITCODE -ne 0) { throw "Driver catalog validation failed: $LASTEXITCODE" }
