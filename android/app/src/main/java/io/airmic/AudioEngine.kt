@@ -23,8 +23,8 @@ internal object AudioEngine {
     private var current: Session? = null
     private var desired = DspConfig()
     private var error = ""
-    fun configure(enabled: Boolean, gate: Boolean, gain: Float, low: Float, mid: Float, high: Float): Boolean {
-        desired = DspConfig(enabled, gate, gain, low, mid, high)
+    fun configure(configuration: DspConfig): Boolean {
+        desired = configuration
         current?.configuration?.set(desired)
         return true
     }
@@ -116,7 +116,8 @@ internal object AudioEngine {
             val shorts = ShortArray(AudioProtocol.SAMPLES)
             val frame = CaptureFrame()
             val us = nowUs()
-            frame.timestamp = (us / 1_000_000) * AudioProtocol.RATE + (us % 1_000_000) * AudioProtocol.RATE / 1_000_000
+            frame.timestamp = max(DspProcessor.LATENCY_SAMPLES.toLong(),
+                (us / 1_000_000) * AudioProtocol.RATE + (us % 1_000_000) * AudioProtocol.RATE / 1_000_000)
             frame.flags = AudioProtocol.START
             var used = 0
             try {
@@ -144,7 +145,7 @@ internal object AudioEngine {
             } catch (e: Exception) { if (!stopping) { error = e.message ?: "캡처 실패"; state.set(3) } }
         }
         private fun sendLoop() {
-            val frame = CaptureFrame(); val dsp = DspProcessor()
+            val frame = CaptureFrame(); val dsp = DspFrameProcessor()
             var applied: DspConfig? = null
             val bytes = ByteArray(AudioProtocol.PACKET_BYTES); val packet = ByteBuffer.wrap(bytes)
             val replies = ByteArray(256); val reply = ByteBuffer.wrap(replies); val ack = AudioProtocol.Ack()
@@ -156,7 +157,7 @@ internal object AudioEngine {
                     for (iteration in 0 until 8) {
                         if (!queue.poll(frame)) break
                         if (nowUs() - frame.readyUs > 60_000) { stale.incrementAndGet(); continue }
-                        dsp.process(frame.samples)
+                        dsp.process(frame)
                         var maximum = 0f
                         for (x in frame.samples) maximum = max(maximum, abs(x))
                         peak.set((maximum.coerceAtMost(1f) * 1000).toLong())

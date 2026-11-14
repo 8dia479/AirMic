@@ -211,7 +211,7 @@ class MicrophoneService : Service() {
             "큐 손실 ${s[2]} · 오래된 프레임 폐기 ${s[5]} · 송신 오류 ${s[4]}\n" +
             "UDP ACK RTT $rtt (종단 간 오디오 지연 아님)\n" +
             "AudioRecord read ${s[9]} / buffer ${s[10]} frames · ${if (s[11] == 1L) "Float" else "PCM16"}\n" +
-            "${AudioEngine.sourceName()}\n" +
+            "${AudioEngine.sourceName()} · DSP 정렬 ${DspProcessor.LATENCY_SAMPLES * 1000 / AudioProtocol.RATE} ms (E2E 아님)\n" +
             "입력 xrun ${s[8]} (-1: 미지원) · 송신 대기 ${s[16]} · 네트워크 오류 ${s[14]}"
         publish(UiState(true, status, detail, statistics, s[12].toInt().coerceIn(0, 1000)))
     }

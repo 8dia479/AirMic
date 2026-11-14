@@ -1,97 +1,91 @@
+// SPDX-License-Identifier: MIT
 package io.airmic
 
-import kotlin.math.*
+import kotlin.math.pow
 
 internal data class DspConfig(
-    val enabled: Boolean = true, val gate: Boolean = false,
+    val enabled: Boolean = true,
+    val noiseSuppression: Boolean = true,
+    val noiseReductionDb: Float = 12f,
     val gain: Float = 0f, val low: Float = 0f, val mid: Float = 0f, val high: Float = 0f,
+    val highPassHz: Float = 80f,
+    val compressorThresholdDb: Float = -18f, val compressorRatio: Float = 3f,
+    val limiterCeilingDb: Float = -1f,
 )
 
-// Persistent pure-Kotlin DSP. A basic gate, NOT WebRTC/RNNoise noise suppression.
+/**
+ * Production Kotlin voice path, owned exclusively by the DSP/network worker:
+ * input trim -> HIGH-PASS -> NOISE SUPPRESSION -> EQ -> COMPRESSOR -> LIMITER.
+ * De-reverb is a separate feature design, not a placeholder or a hidden NS mode.
+ * configure() is applied at a 480-sample boundary; no state allocation/reset or
+ * latency change on an ordinary setting update. reset() is for stream gaps only.
+ */
 internal class DspProcessor {
-    private class Biquad {
-        var b0 = 1.0; var b1 = 0.0; var b2 = 0.0; var a1 = 0.0; var a2 = 0.0
-        var z1 = 0.0; var z2 = 0.0
-        fun set(b0: Double, b1: Double, b2: Double, a1: Double, a2: Double) {
-            this.b0 = b0; this.b1 = b1; this.b2 = b2; this.a1 = a1; this.a2 = a2
-        }
-        fun clear() { z1 = 0.0; z2 = 0.0 }
-        fun tick(x: Float): Float {
-            val y = b0 * x + z1
-            z1 = b1 * x - a1 * y + z2; z2 = b2 * x - a2 * y
-            if (abs(z1) < 1e-24) z1 = 0.0
-            if (abs(z2) < 1e-24) z2 = 0.0
-            return y.toFloat()
-        }
-    }
-    private val hp = Biquad(); private val low = Biquad(); private val mid = Biquad(); private val high = Biquad()
-    private var config = DspConfig()
-    private var gain = 1f
-    private var detector = 0f; private var compression = 1f; private var gateGain = 1f; private var noisePower = .000001f
-    private val ceiling = 10.0.pow(-1.0 / 20).toFloat()
-    private val makeup = 10.0.pow(2.0 / 20).toFloat()
-    init { configure(config) }
-    private fun valid(x: Float, low: Float, high: Float) = if (x.isFinite()) x.coerceIn(low, high) else 0f
+    companion object { const val LATENCY_SAMPLES = NoiseSuppressor.LATENCY_SAMPLES }
+    private val highPass = HighPassFilter()
+    private val noiseSuppressor = NoiseSuppressor()
+    private val equalizer = VoiceEqualizer()
+    private val compressor = VoiceCompressor()
+    private val limiter = PeakLimiter()
+    private val dryHistory = FloatArray(AudioProtocol.SAMPLES)
+    private val delayedDry = FloatArray(AudioProtocol.SAMPLES)
+    private var targetTrim = 1f
+    private var trim = 1f
+    private var targetMix = 1f
+    private var mix = 1f
+    init { configure(DspConfig()) }
+
     fun configure(value: DspConfig) {
-        if (value.enabled != config.enabled) reset()
-        config = value
-        gain = 10.0.pow(valid(value.gain, -24f, 24f) / 20.0).toFloat()
-        val w = 2 * PI * 80 / AudioProtocol.RATE
-        val c = cos(w); val alpha = sin(w) / sqrt(2.0); val a0 = 1 + alpha
-        hp.set((1 + c) / (2 * a0), -(1 + c) / a0, (1 + c) / (2 * a0), -2 * c / a0, (1 - alpha) / a0)
-        shelf(low, 180.0, valid(value.low, -12f, 12f), false)
-        peak(mid, 1500.0, .8, valid(value.mid, -12f, 12f))
-        shelf(high, 4500.0, valid(value.high, -12f, 12f), true)
-    }
-    private fun peak(filter: Biquad, hz: Double, q: Double, db: Float) {
-        val a = 10.0.pow(db / 40.0); val w = 2 * PI * hz / AudioProtocol.RATE
-        val c = cos(w); val alpha = sin(w) / (2 * q); val a0 = 1 + alpha / a
-        filter.set((1 + alpha * a) / a0, -2 * c / a0, (1 - alpha * a) / a0, -2 * c / a0, (1 - alpha / a) / a0)
-    }
-    private fun shelf(filter: Biquad, hz: Double, db: Float, high: Boolean) {
-        val a = 10.0.pow(db / 40.0); val w = 2 * PI * hz / AudioProtocol.RATE
-        val c = cos(w); val beta = sqrt(2 * a) * sin(w)
-        if (high) {
-            val a0 = (a + 1) - (a - 1) * c + beta
-            filter.set(a * ((a + 1) + (a - 1) * c + beta) / a0,
-                -2 * a * ((a - 1) + (a + 1) * c) / a0, a * ((a + 1) + (a - 1) * c - beta) / a0,
-                2 * ((a - 1) - (a + 1) * c) / a0, ((a + 1) - (a - 1) * c - beta) / a0)
-        } else {
-            val a0 = (a + 1) + (a - 1) * c + beta
-            filter.set(a * ((a + 1) - (a - 1) * c + beta) / a0,
-                2 * a * ((a - 1) - (a + 1) * c) / a0, a * ((a + 1) - (a - 1) * c - beta) / a0,
-                -2 * ((a - 1) + (a + 1) * c) / a0, ((a + 1) + (a - 1) * c - beta) / a0)
-        }
+        targetMix = if (value.enabled) 1f else 0f
+        targetTrim = 10.0.pow(finiteSetting(value.gain, -24f, 24f, 0f) / 20.0).toFloat()
+        highPass.configure(value.highPassHz)
+        noiseSuppressor.configure(value.noiseSuppression, value.noiseReductionDb)
+        equalizer.configure(value.low, value.mid, value.high)
+        compressor.configure(value.compressorThresholdDb, value.compressorRatio)
+        limiter.configure(value.limiterCeilingDb)
     }
     fun reset() {
-        hp.clear(); low.clear(); mid.clear(); high.clear()
-        detector = 0f; compression = 1f; gateGain = 1f; noisePower = .000001f
+        highPass.reset(); noiseSuppressor.reset(); equalizer.reset(); compressor.reset()
+        dryHistory.fill(0f); delayedDry.fill(0f); mix = targetMix; trim = targetTrim
     }
     fun process(samples: FloatArray) {
         require(samples.size == AudioProtocol.SAMPLES)
-        var power = 0f
+        val trimStep = (targetTrim - trim) / AudioProtocol.SAMPLES
         for (i in samples.indices) {
-            var x = if (samples[i].isFinite()) samples[i].coerceIn(-8f, 8f) else 0f
-            if (config.enabled) x = hp.tick(x * gain)
-            samples[i] = x; power += x * x
+            val x = if (samples[i].isFinite()) samples[i].coerceIn(-8f, 8f) else 0f
+            delayedDry[i] = dryHistory[i]; dryHistory[i] = x
+            trim += trimStep
+            samples[i] = highPass.tick(x * trim)
         }
-        if (!config.enabled) return
-        power /= AudioProtocol.SAMPLES
-        noisePower += (if (power < noisePower) .1f else .0005f) * (power - noisePower)
-        val threshold = max(.000004f, noisePower * 3)
-        val gateTarget = if (config.gate) (power / threshold).coerceIn(.04f, 1f) else 1f
-        val thresholdLinear = .12589254f
+        trim = targetTrim
+        noiseSuppressor.process(samples) // Always warm; OFF uses the same aligned dry path.
+        val mixStep = (targetMix - mix) / AudioProtocol.SAMPLES
         for (i in samples.indices) {
-            gateGain += (if (gateTarget > gateGain) .01f else .0005f) * (gateTarget - gateGain)
-            var x = high.tick(mid.tick(low.tick(samples[i] * gateGain)))
-            val level = abs(x)
-            val coefficient = if (level > detector) .995842f else .999792f
-            detector = coefficient * detector + (1 - coefficient) * level
-            val desired = if (detector > thresholdLinear) (detector / thresholdLinear).pow(1f / 3 - 1) else 1f
-            val smooth = if (desired < compression) .989637f else .999740f
-            compression = smooth * compression + (1 - smooth) * desired
-            x *= compression * makeup
-            samples[i] = if (x.isFinite()) x.coerceIn(-ceiling, ceiling) else 0f
+            val enhanced = compressor.tick(equalizer.tick(samples[i]))
+            mix += mixStep
+            val x = if (mix <= 0f) delayedDry[i] else delayedDry[i] * (1f - mix) + enhanced * mix
+            samples[i] = limiter.tick(x) // Last in every route, including global DSP bypass.
         }
+        mix = targetMix
+    }
+}
+
+// Keep delayed content, wire timestamps and discontinuities consistent. A gap
+// discards every DSP tail rather than publishing speech from before that gap.
+// The first hop is silence; at stop the final buffered hop is intentionally dropped.
+internal class DspFrameProcessor {
+    private val dsp = DspProcessor()
+    private var started = false
+    private var expectedSequence = 0
+    fun configure(value: DspConfig) = dsp.configure(value)
+    fun process(frame: CaptureFrame) {
+        require(frame.timestamp >= DspProcessor.LATENCY_SAMPLES)
+        if (!started || frame.sequence != expectedSequence || (frame.flags and AudioProtocol.DISCONTINUITY) != 0) {
+            dsp.reset()
+            if (started) frame.flags = frame.flags or AudioProtocol.DISCONTINUITY
+        }
+        started = true; expectedSequence = frame.sequence + 1 // Int wrap is the wire's uint32 wrap.
+        dsp.process(frame.samples)
+        frame.timestamp -= DspProcessor.LATENCY_SAMPLES
     }
 }

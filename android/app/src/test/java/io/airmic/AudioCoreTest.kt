@@ -30,11 +30,12 @@ class AudioCoreTest {
         for (frame in 0 until 1000) {
             for (i in samples.indices) samples[i] = (sin((frame * 480 + i) * .17) * 2).toFloat()
             if (frame == 100) { samples[0] = Float.NaN; samples[1] = Float.POSITIVE_INFINITY }
-            if (frame == 500) processor.configure(DspConfig(gate = true, gain = 24f, low = 12f, mid = -12f, high = 12f))
+            if (frame == 500) processor.configure(DspConfig(noiseReductionDb = 18f, gain = 24f, low = 12f, mid = -12f, high = 12f))
             processor.process(samples)
             assertTrue(samples.all { it.isFinite() && abs(it) <= .891251f })
         }
         processor.configure(DspConfig(enabled = false)); samples.fill(.123f); processor.process(samples)
+        samples.fill(.123f); processor.process(samples) // Aligned bypass after the transition hop.
         assertTrue(samples.all { it == .123f })
     }
     @Test(timeout = 15_000) fun fixedQueueOrdersAndRejectsOverflow() {

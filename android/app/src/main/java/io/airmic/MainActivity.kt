@@ -102,15 +102,17 @@ class MainActivity : Activity() {
             }
             column.addView(control)
         }
-        toggle("HPF → Gate → EQ → Compressor → Limiter", "dsp", true)
-        toggle("기본 노이즈 게이트 (WebRTC 아님)", "gate", false)
-        fun slider(label: String, key: String, minimum: Int, maximum: Int) {
-            val initial = prefs.getFloat(key, 0f).roundToInt().coerceIn(minimum, maximum)
-            val title = text("$label  ${initial} dB"); column.addView(title)
+        toggle("HPF → Noise Suppression → EQ → Compressor → Limiter", "dsp", true)
+        toggle("Noise Suppression · 정상 잡음 스펙트럼 억제", "ns", true)
+        column.addView(text("Gate가 아닌 주파수별 잡음 억제입니다. WebRTC/RNNoise·다른 화자 제거·잔향 제거는 아닙니다.\nDSP/NS를 꺼도 정렬용 10 ms 지연과 최종 안전 limiter는 유지됩니다. De-reverb는 별도 설계이며 아직 제공하지 않습니다.", 12f))
+        fun slider(label: String, key: String, minimum: Int, maximum: Int, default: Float = 0f, unit: String = "dB") {
+            val saved = prefs.getFloat(key, default)
+            val initial = (if (saved.isFinite()) saved else default).roundToInt().coerceIn(minimum, maximum)
+            val title = text("$label  $initial $unit"); column.addView(title)
             column.addView(SeekBar(this).apply {
                 max = maximum - minimum; progress = initial - minimum
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) { title.text = "$label  ${progress + minimum} dB" }
+                    override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) { title.text = "$label  ${progress + minimum} $unit" }
                     override fun onStartTrackingTouch(bar: SeekBar) { title.alpha = 1f }
                     override fun onStopTrackingTouch(bar: SeekBar) {
                         prefs.edit().putFloat(key, (bar.progress + minimum).toFloat()).apply(); sendConfig()
@@ -118,10 +120,15 @@ class MainActivity : Activity() {
                 })
             })
         }
+        slider("HPF cutoff", "hpf_hz", 40, 200, 80f, "Hz")
+        slider("NS 최대 감쇠", "ns_reduction", 6, 24, 12f)
         slider("입력 게인", "gain", -24, 24)
         slider("저음 EQ · 180 Hz", "low", -12, 12)
         slider("중음 EQ · 1.5 kHz", "mid", -12, 12)
         slider("고음 EQ · 4.5 kHz", "high", -12, 12)
+        slider("Compressor threshold", "compressor_threshold", -36, -6, -18f)
+        slider("Compressor ratio", "compressor_ratio", 1, 10, 3f, ":1")
+        slider("Limiter ceiling", "limiter_ceiling", -12, -1, -1f)
         column.addView(text("PC: AirMic 전용 드라이버가 설치돼 있으면 Discord/게임에서 AirMic Microphone을 선택하세요. 드라이버가 없는 수신 진단 모드는 시스템 마이크가 아닙니다.\n\n화면을 꺼도 알림 서비스가 마이크를 사용합니다. 종료하려면 전송 중지 또는 알림의 중지 버튼을 누르세요.\n\n암호화되지 않은 LAN 전용 전송입니다. 신뢰하는 Wi-Fi에서만 사용하세요. 30–50 ms는 목표이며 실측값이 아닙니다.", 12f))
         // Target 35 enforces edge-to-edge; keep controls clear of bars and the IME.
         scroll.setOnApplyWindowInsetsListener { view, insets ->
