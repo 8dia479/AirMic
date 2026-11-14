@@ -98,3 +98,18 @@ PC와 같은 LAN에 연결해 GUI에 표시된 PC IPv4와 같은 포트를 입�
 ## 빠른 Windows 마이크 사용
 
 정식 AirMic 가상 드라이버가 준비되기 전에는 선택적으로 [VB-CABLE](https://vb-audio.com/Cable/)을 설치할 수 있습니다. AirMic 출력에서 **CABLE Input**을 선택하고 Discord/게임의 입력 장치에서 **CABLE Output**을 선택하세요. 상세 연결 절차와 주의사항은 [Windows 빌드·실행 안내](docs/BUILD.md#빠른-마이크-연결--vb-cable-임시-경로)를 참조하세요.
+
+
+## 원클릭 빌드 + 휴대폰 설치 (Windows)
+
+저장소 루트의 **`Build-And-Install.bat`**을 더블클릭하세요. 다음 작업을 순서대로 수행합니다.
+
+1. 연결된 Android 기기와 Java / ADB / .NET SDK 확인
+2. Android 단위 테스트 및 DSP host 테스트
+3. Debug APK 빌드와 lint
+4. USB 디버깅으로 연결된 휴대폰에 APK 설치/업데이트
+5. Windows 전체 솔루션 Release 빌드
+
+필요 환경: **JDK 17, Android SDK Platform-Tools 및 API 35 / Build Tools 35.0.0, .NET 10 SDK**.
+휴대폰에서 USB 디버깅을 켜고 PC의 RSA 연결 허용 창을 승인해야 합니다. 기기가 여러 대 연결되어 있으면
+대상 기기 하나만 남기고 실행하세요. 실패한 단계에서 스크립트가 중단되고 오류를 표시합니다.
