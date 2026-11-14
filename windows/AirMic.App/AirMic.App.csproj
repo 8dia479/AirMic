@@ -15,7 +15,14 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../AirMic.Core/AirMic.Core.csproj" />
+    <ProjectReference Include="../AirMic.Setup/AirMic.Setup.csproj" />
     <EmbeddedResource Include="$(AirMicDriverPackage)" LogicalName="AirMic.DriverPackage.zip"
                       Condition="'$(AirMicDriverPackage)' != '' and Exists('$(AirMicDriverPackage)')" />
+    <EmbeddedResource Include="$(AirMicNoticesPackage)" LogicalName="AirMic.RedistributionNotices.zip"
+                      Condition="'$(AirMicNoticesPackage)' != '' and Exists('$(AirMicNoticesPackage)')" />
   </ItemGroup>
+  <Target Name="ValidateAirMicBundlePaths" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(AirMicDriverPackage)' != '' and !Exists('$(AirMicDriverPackage)')" Text="AirMicDriverPackage does not exist." />
+    <Error Condition="'$(AirMicNoticesPackage)' != '' and !Exists('$(AirMicNoticesPackage)')" Text="AirMicNoticesPackage does not exist." />
+  </Target>
 </Project>

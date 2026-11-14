@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MS-PL
-// AirMic-maintained SysVAD subset; provenance and modifications: ../UPSTREAM.md.
+// AirMic-maintained SysVAD subset; provenance and modifications: driver/UPSTREAM.md.
 
 #ifndef _SYSVAD_UNITTESTDATA_H_
 #define _SYSVAD_UNITTESTDATA_H_

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MS-PL
-// AirMic-maintained SysVAD subset; provenance and modifications: ../UPSTREAM.md.
+// AirMic-maintained SysVAD subset; provenance and modifications: driver/UPSTREAM.md.
 /*++
 
 Module Name:
@@ -768,15 +768,8 @@ NTSTATUS CMiniportWaveRT::GetVolumeChannelCount(_Out_  UINT32 *_pulChannelCount)
 
     DPF_ENTER(("[CMiniportWaveRT::GetVolumeChannelCount]"));
 
-    if (IsSidebandDevice() && m_pSidebandDevice->IsVolumeSupported(m_DeviceType))
-    {
-        ULONG propSize = 0;
-        PKSPROPERTY_DESCRIPTION pPropDesc = (PKSPROPERTY_DESCRIPTION)m_pSidebandDevice->GetVolumeSettings(m_DeviceType, &propSize);
-        ASSERT(propSize >= sizeof(KSPROPERTY_DESCRIPTION) + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_STEPPING_LONG));
-        PKSPROPERTY_MEMBERSHEADER pMembers = (PKSPROPERTY_MEMBERSHEADER)(pPropDesc + 1);
-        *_pulChannelCount = pMembers->MembersCount;
-    }
-    else
+    // AirMic: sideband devices are not part of this driver subset.
+
     {
         *_pulChannelCount = m_DeviceMaxChannels;
     }
@@ -791,31 +784,8 @@ NTSTATUS CMiniportWaveRT::GetVolumeSteppings(_Out_writes_bytes_(_ui32DataSize) P
     ASSERT (_pKsPropStepLong);
     DPF_ENTER(("[CMiniportWaveRT::GetVolumeSteppings]"));
 
-    if (IsSidebandDevice() && m_pSidebandDevice->IsVolumeSupported(m_DeviceType))
-    {
-        // For Sideband Devices copy values from the Sideband DDI property descriptor
-        ULONG propSize = 0;
-        PKSPROPERTY_DESCRIPTION pPropDesc = (PKSPROPERTY_DESCRIPTION)m_pSidebandDevice->GetVolumeSettings(m_DeviceType, &propSize);
+    // AirMic: sideband devices are not part of this driver subset.
 
-        ASSERT(propSize >= sizeof(KSPROPERTY_DESCRIPTION) + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_STEPPING_LONG));
-
-        PKSPROPERTY_MEMBERSHEADER pMembers = (PKSPROPERTY_MEMBERSHEADER)(pPropDesc + 1);
-
-        ASSERT(ulChannelCount <= pMembers->MembersCount);
-
-        if (ulChannelCount > pMembers->MembersCount)
-        {
-            return STATUS_INVALID_PARAMETER;
-        }
-
-        PKSPROPERTY_STEPPING_LONG pRange = (PKSPROPERTY_STEPPING_LONG)(pMembers + 1);
-
-        for (UINT i = 0; i < ulChannelCount; i++)
-        {
-            RtlCopyMemory(&_pKsPropStepLong[i], &pRange[i], sizeof(KSPROPERTY_STEPPING_LONG));
-        }
-    }
-    else
     {
         ASSERT(ulChannelCount <= m_DeviceMaxChannels);
         if (ulChannelCount > m_DeviceMaxChannels)
@@ -848,17 +818,15 @@ NTSTATUS CMiniportWaveRT::GetVolumeSteppings(_Out_writes_bytes_(_ui32DataSize) P
 #pragma code_seg("PAGE")
 NTSTATUS CMiniportWaveRT::GetChannelVolume(_In_  UINT32 _uiChannel, _Out_ LONG *_pVolume)
 {
+    if (_uiChannel != ALL_CHANNELS_ID && _uiChannel >= m_DeviceMaxChannels) return STATUS_INVALID_PARAMETER;
     PAGED_CODE ();
     ASSERT (_pVolume);
     DPF_ENTER(("[CMiniportWaveRT::GetChannelVolume]"));
 
     NTSTATUS status = STATUS_SUCCESS;
 
-    if (IsSidebandDevice() && m_pSidebandDevice->IsVolumeSupported(m_DeviceType))
-    {
-        status = m_pSidebandDevice->GetVolume(m_DeviceType, _uiChannel, _pVolume);
-    }
-    else
+    // AirMic: sideband devices are not part of this driver subset.
+
     {
         if (_uiChannel == ALL_CHANNELS_ID)
         {
@@ -876,14 +844,12 @@ NTSTATUS CMiniportWaveRT::GetChannelVolume(_In_  UINT32 _uiChannel, _Out_ LONG *
 #pragma code_seg("PAGE")
 NTSTATUS CMiniportWaveRT::SetChannelVolume(_In_  UINT32 _uiChannel, _In_  LONG _Volume)
 {
+    if (_uiChannel != ALL_CHANNELS_ID && _uiChannel >= m_DeviceMaxChannels) return STATUS_INVALID_PARAMETER;
     PAGED_CODE ();
     DPF_ENTER(("[CMiniportWaveRT::SetChannelVolume]"));
 
-    if (IsSidebandDevice() && m_pSidebandDevice->IsVolumeSupported(m_DeviceType))
-    {
-        return m_pSidebandDevice->SetVolume(m_DeviceType, _uiChannel, _Volume);
-    }
-    else
+    // AirMic: sideband devices are not part of this driver subset.
+
     {
         // Normalize volume only for non-sideband devices.
         // Volume levels are governed by Sideband provider
@@ -981,15 +947,8 @@ NTSTATUS CMiniportWaveRT::GetMuteChannelCount(_Out_  UINT32 *_pulChannelCount)
 
     DPF_ENTER(("[CMiniportWaveRT::GetMuteChannelCount]"));
 
-    if (IsSidebandDevice() && m_pSidebandDevice->IsMuteSupported(m_DeviceType))
-    {
-        ULONG propSize = 0;
-        PKSPROPERTY_DESCRIPTION pPropDesc = (PKSPROPERTY_DESCRIPTION)m_pSidebandDevice->GetMuteSettings(m_DeviceType, &propSize);
-        ASSERT(propSize >= sizeof(KSPROPERTY_DESCRIPTION) + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_STEPPING_LONG));
-        PKSPROPERTY_MEMBERSHEADER pMembers = (PKSPROPERTY_MEMBERSHEADER)(pPropDesc + 1);
-        *_pulChannelCount = pMembers->MembersCount;
-    }
-    else
+    // AirMic: sideband devices are not part of this driver subset.
+
     {
         *_pulChannelCount = m_DeviceMaxChannels;
     }
@@ -1004,32 +963,8 @@ NTSTATUS CMiniportWaveRT::GetMuteSteppings(_Out_writes_bytes_(_ui32DataSize)  PK
     ASSERT (_pKsPropStepLong);
     DPF_ENTER(("[CMiniportWaveRT::GetMuteSteppings]"));
 
-    if (IsSidebandDevice() && m_pSidebandDevice->IsMuteSupported(m_DeviceType))
-    {
-        // For Sideband Devices copy values from the Sideband DDI property descriptor
-        ULONG propSize = 0;
-        PKSPROPERTY_DESCRIPTION pPropDesc = (PKSPROPERTY_DESCRIPTION)m_pSidebandDevice->GetMuteSettings(m_DeviceType, &propSize);
+    // AirMic: sideband devices are not part of this driver subset.
 
-        ASSERT(propSize >= sizeof(KSPROPERTY_DESCRIPTION) + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_STEPPING_LONG));
-
-        PKSPROPERTY_MEMBERSHEADER pMembers = (PKSPROPERTY_MEMBERSHEADER)(pPropDesc + 1);
-
-        ASSERT(ulChannelCount <= pMembers->MembersCount);
-
-        if (ulChannelCount > pMembers->MembersCount)
-        {
-            return STATUS_INVALID_PARAMETER;
-        }
-
-        PKSPROPERTY_STEPPING_LONG pRange = (PKSPROPERTY_STEPPING_LONG)(pMembers + 1);
-
-        for (UINT i = 0; i < ulChannelCount; i++)
-        {
-            RtlCopyMemory(&_pKsPropStepLong[i], &pRange[i], sizeof(KSPROPERTY_STEPPING_LONG));
-        }
-
-    }
-    else
     {
         ASSERT(ulChannelCount <= m_DeviceMaxChannels);
 
@@ -1050,15 +985,13 @@ NTSTATUS CMiniportWaveRT::GetMuteSteppings(_Out_writes_bytes_(_ui32DataSize)  PK
 #pragma code_seg("PAGE")
 NTSTATUS CMiniportWaveRT::GetChannelMute(_In_  UINT32 _uiChannel, _Out_  BOOL *_pbMute)
 {
+    if (_uiChannel != ALL_CHANNELS_ID && _uiChannel >= m_DeviceMaxChannels) return STATUS_INVALID_PARAMETER;
     PAGED_CODE ();
     ASSERT (_pbMute);
     DPF_ENTER(("[CMiniportWaveRT::GetChannelMute]"));
 
-    if (IsSidebandDevice() && m_pSidebandDevice->IsMuteSupported(m_DeviceType))
-    {
-        *_pbMute = m_pSidebandDevice->GetMute(m_DeviceType, _uiChannel);
-    }
-    else
+    // AirMic: sideband devices are not part of this driver subset.
+
     {
         if (_uiChannel == ALL_CHANNELS_ID)
         {
@@ -1076,13 +1009,12 @@ NTSTATUS CMiniportWaveRT::GetChannelMute(_In_  UINT32 _uiChannel, _Out_  BOOL *_
 #pragma code_seg("PAGE")
 NTSTATUS CMiniportWaveRT::SetChannelMute(_In_  UINT32 _uiChannel, _In_  BOOL _bMute)
 {
+    if (_uiChannel != ALL_CHANNELS_ID && _uiChannel >= m_DeviceMaxChannels) return STATUS_INVALID_PARAMETER;
     PAGED_CODE ();
     DPF_ENTER(("[CMiniportWaveRT::SetChannelMute]"));
 
-    if (IsSidebandDevice() && m_pSidebandDevice->IsMuteSupported(m_DeviceType))
-    {
-        return m_pSidebandDevice->SetMute(m_DeviceType, _uiChannel, _bMute);
-    }
+    // AirMic: sideband devices are not part of this driver subset.
+
 
     // Will reach here only if not handled through Sideband
     if (_uiChannel == ALL_CHANNELS_ID)

@@ -30,6 +30,8 @@ MIT licence does not replace the sample's licence.
 - `EndpointsCommon/minwavert.cpp` / `MiniportStreamAudioEngineNode.cpp`: remove
   remaining sample recording/tone references; no advertised sample loopback protection.
 - `sysvad.h`: AirMic diagnostic prefix, removed data-file switch declaration.
+- `MiniportAudioEngineNode.cpp`: remove unguarded sample sideband branches and add runtime channel bounds.
+- AirMic history uses explicit width-checked primitive types without pulling host CRT headers into kernel sources.
 - Case-only include normalization, SPDX/provenance comments and UTF-8/LF normalization.
 - No sample APO, keyword-detector adapter DLL, sideband device, HDMI/SPDIF,
   sound-detection endpoint, sine generator or file recorder is packaged/registered.

@@ -31,7 +31,9 @@
       <ComboBox x:Name="Output"/>
       <TextBlock Text="일반 스피커 선택은 청취용이며 시스템 마이크가 아닙니다. 피드백·하울링에 주의하세요." Foreground="#9FB8C2"/>
       <DockPanel Margin="0,14,0,4"><TextBlock x:Name="VolumeLabel" Text="출력 음량 · 100%" Width="160"/><Slider x:Name="Volume" Minimum="0" Maximum="150" Value="100" TickFrequency="10" ValueChanged="Volume_Changed" VerticalAlignment="Center"/></DockPanel>
-      <Button x:Name="InstallDriverButton" Content="AirMic 전용 드라이버 설치 / 복구 (관리자 승인)" HorizontalAlignment="Left" Click="InstallDriver_Click"/>
+      <TextBlock Text="정식 bundle은 이 EXE 하나로 앱·전용 driver·시작 메뉴·Private LAN 방화벽을 설치합니다." Foreground="#9FB8C2" Margin="0,8,0,2"/>
+      <WrapPanel><Button x:Name="InstallDriverButton" Content="AirMic 설치 / 복구 (관리자 승인)" Click="InstallDriver_Click"/>
+        <Button x:Name="UninstallButton" Content="AirMic 제거" Click="Uninstall_Click"/></WrapPanel>
     </StackPanel></Border>
     <Border Style="{StaticResource Card}"><StackPanel>
       <DockPanel><Button x:Name="StartButton" Content="수신 시작" Click="Start_Click"/><Button x:Name="StopButton" Content="중지" Click="Stop_Click" IsEnabled="False"/>

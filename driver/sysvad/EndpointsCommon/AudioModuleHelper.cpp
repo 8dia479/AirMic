@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MS-PL
-// AirMic-maintained SysVAD subset; provenance and modifications: ../UPSTREAM.md.
+// AirMic-maintained SysVAD subset; provenance and modifications: driver/UPSTREAM.md.
 /*++
 
 Copyright (c) Microsoft Corporation All Rights Reserved

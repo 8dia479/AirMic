@@ -1,64 +1,38 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
+using AirMic.Setup;
+using Microsoft.Win32;
 
 namespace AirMic.App;
 
 // Only installs the package embedded at PUBLISH time. Never downloads a driver or changes boot/security policy.
 internal static class DriverInstaller
 {
-    private const string Resource = "AirMic.DriverPackage.zip", HardwareId = @"Root\AirMic";
+    private const string Resource = "AirMic.DriverPackage.zip", HardwareId = DriverPackage.HardwareId;
     private static readonly Guid MediaClass = new("4d36e96c-e325-11ce-bfc1-08002be10318");
     public static bool HasEmbeddedPackage => Assembly.GetExecutingAssembly().GetManifestResourceInfo(Resource) is not null;
-    private sealed record PackageManifest(int SchemaVersion, string HardwareId, string Inf, string Catalog,
-        Dictionary<string, string> Files);
     public static string InstallEmbedded()
     {
         if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             throw new UnauthorizedAccessException("드라이버 설치에는 관리자 승인이 필요합니다.");
         using Stream input = Assembly.GetExecutingAssembly().GetManifestResourceStream(Resource)
             ?? throw new InvalidOperationException("이 개발 빌드에는 서명된 AirMic 드라이버가 없습니다. 가상 마이크 설치를 완료할 수 없습니다.");
-        // Administrators/OS own Program Files. Do not execute an INF chosen from an untrusted download/temp folder.
-        string parent = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "AirMic", "DriverPackages");
-        Directory.CreateDirectory(parent);
-        if ((File.GetAttributes(parent) & FileAttributes.ReparsePoint) != 0)
-            throw new IOException("드라이버 경로는 reparse point일 수 없습니다.");
+        DriverPackage package = DriverPackage.Read(input); // Validate EVERYTHING before privileged disk/PnP changes.
+        string parent = Path.Combine(AppDeployment.ProductRoot, "DriverPackages");
+        AppDeployment.EnsureProtectedDirectory(parent);
         string stage = Path.Combine(parent, Guid.NewGuid().ToString("N")); Directory.CreateDirectory(stage);
-        using (var zip = new ZipArchive(input, ZipArchiveMode.Read))
+        foreach (var file in package.Files)
         {
-            if (zip.Entries.Count is < 4 or > 64 || zip.Entries.Sum(e => e.Length) > 64 * 1024 * 1024)
-                throw new InvalidDataException("드라이버 패키지 크기/파일 수가 잘못됐습니다.");
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (ZipArchiveEntry entry in zip.Entries)
-            {
-                if (!Regex.IsMatch(entry.FullName, "^[A-Za-z0-9_.-]+$") || !names.Add(entry.FullName))
-                    throw new InvalidDataException("드라이버 패키지 경로/중복 파일 오류");
-                entry.ExtractToFile(Path.Combine(stage, entry.FullName), false);
-            }
+            using var output = new FileStream(Path.Combine(stage, file.Key), FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            output.Write(file.Value.Span);
         }
-        string manifestPath = Path.Combine(stage, "manifest.json");
-        if (!File.Exists(manifestPath) || new FileInfo(manifestPath).Length > 65536) throw new InvalidDataException("드라이버 manifest 없음");
-        PackageManifest manifest = JsonSerializer.Deserialize<PackageManifest>(File.ReadAllText(manifestPath),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true, MaxDepth = 8 }) ?? throw new InvalidDataException("드라이버 manifest 오류");
-        if (manifest.SchemaVersion != 1 || manifest.HardwareId != HardwareId || manifest.Inf != "AirMic.inf" || manifest.Catalog != "AirMic.cat"
-            || manifest.Files is null || !manifest.Files.ContainsKey("AirMic.inf") || !manifest.Files.ContainsKey("AirMic.cat") || !manifest.Files.ContainsKey("AirMic.sys"))
-            throw new InvalidDataException("지원하지 않는 드라이버 패키지입니다.");
-        foreach (var item in manifest.Files)
-        {
-            if (!Regex.IsMatch(item.Key, "^[A-Za-z0-9_.-]+$")) throw new InvalidDataException("파일 이름 오류");
-            string digest = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Path.Combine(stage, item.Key))));
-            if (!digest.Equals(item.Value, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("드라이버 파일 해시 불일치: " + item.Key);
-        }
-        string inf = Path.Combine(stage, manifest.Inf);
-        if (!File.ReadAllText(inf).Contains(HardwareId, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("AirMic 하드웨어 ID가 없습니다.");
+        string inf = Path.Combine(stage, DriverPackage.Inf);
         var processInfo = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "pnputil.exe"))
         { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         processInfo.ArgumentList.Add("/add-driver"); processInfo.ArgumentList.Add(inf);
@@ -98,6 +72,62 @@ internal static class DriverInstaller
         }
         finally { if (set != IntPtr.Zero && set != new IntPtr(-1)) SetupDiDestroyDeviceInfoList(set); }
     }
+    public static string UninstallAirMicDevices()
+    {
+        if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            throw new UnauthorizedAccessException("AirMic 제거에는 관리자 승인이 필요합니다.");
+        Guid category = MediaClass;
+        IntPtr set = SetupDiGetClassDevs(ref category, null, IntPtr.Zero, 0); // Includes non-present AirMic devices.
+        if (set == new IntPtr(-1)) throw new Win32Exception();
+        bool restart = false;
+        var published = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            byte[] buffer = new byte[8192];
+            // Snapshot device structs before removals, which can otherwise change enumeration indexes.
+            var devices = new List<DeviceInfo>();
+            for (uint i = 0; ; i++)
+            {
+                var info = new DeviceInfo { Size = Marshal.SizeOf<DeviceInfo>() };
+                if (!SetupDiEnumDeviceInfo(set, i, ref info))
+                { if (Marshal.GetLastWin32Error() == 259) break; throw new Win32Exception(); }
+                if (!SetupDiGetDeviceRegistryProperty(set, ref info, 1, out uint type, buffer, buffer.Length, out int used) || type != 7) continue;
+                if (!Encoding.Unicode.GetString(buffer, 0, Math.Min(used, buffer.Length)).Split('\0').Any(v => v.Equals(HardwareId, StringComparison.OrdinalIgnoreCase))) continue;
+                if (SetupDiGetDeviceRegistryProperty(set, ref info, 9, out _, buffer, buffer.Length, out used)) // SPDRP_DRIVER
+                {
+                    string keyName = Encoding.Unicode.GetString(buffer, 0, Math.Min(used, buffer.Length)).TrimEnd('\0');
+                    // Windows owns this class key, selected from an exact Root\AirMic hardware-ID match.
+                    using RegistryKey? key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Class\" + keyName);
+                    if (key?.GetValue("InfPath") is string name && Regex.IsMatch(name, @"^oem[0-9]+\.inf$", RegexOptions.IgnoreCase)) published.Add(name);
+                }
+                devices.Add(info);
+            }
+            foreach (DeviceInfo found in devices)
+            {
+                DeviceInfo info = found;
+                if (!DiUninstallDevice(IntPtr.Zero, set, ref info, 0, out bool reboot)) throw new Win32Exception();
+                restart |= reboot;
+            }
+        }
+        finally { SetupDiDestroyDeviceInfoList(set); }
+        foreach (string name in published)
+        {
+            string inf = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "INF", name);
+            if (!File.Exists(inf)) continue;
+            if (!File.ReadAllText(inf).Contains(HardwareId, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("AirMic가 아닌 드라이버 패키지는 제거하지 않습니다.");
+            var info = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "pnputil.exe"))
+            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            info.ArgumentList.Add("/delete-driver"); info.ArgumentList.Add(name); // Never /force, never other drivers.
+            using Process process = Process.Start(info) ?? throw new IOException("Windows 제거 도구 시작 실패");
+            Task<string> output = process.StandardOutput.ReadToEndAsync(), errors = process.StandardError.ReadToEndAsync();
+            if (!process.WaitForExit(120_000)) throw new TimeoutException("Windows driver 제거가 진행 중일 수 있습니다.");
+            string message = output.GetAwaiter().GetResult() + errors.GetAwaiter().GetResult();
+            if (process.ExitCode == 3010) restart = true;
+            else if (process.ExitCode != 0) throw new InvalidOperationException("AirMic 패키지 제거 실패: " + message);
+        }
+        return restart ? "전용 driver 제거 후 Windows 재부팅이 필요합니다." : "AirMic 전용 driver 제거 처리가 끝났습니다.";
+    }
     private static bool DeviceExists()
     {
         Guid category = MediaClass;
@@ -119,6 +149,8 @@ internal static class DriverInstaller
         finally { SetupDiDestroyDeviceInfoList(set); }
     }
     [StructLayout(LayoutKind.Sequential)] private struct DeviceInfo { public int Size; public Guid ClassGuid; public uint DevInst; public IntPtr Reserved; }
+    [DllImport("newdev.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DiUninstallDevice(IntPtr hwnd, IntPtr set, ref DeviceInfo info, uint flags, [MarshalAs(UnmanagedType.Bool)] out bool reboot);
     [DllImport("setupapi.dll", SetLastError = true)] private static extern IntPtr SetupDiCreateDeviceInfoList(ref Guid guid, IntPtr hwnd);
     [DllImport("setupapi.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "SetupDiCreateDeviceInfoW")]
     [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetupDiCreateDeviceInfo(IntPtr set, string name, ref Guid guid, string description, IntPtr hwnd, uint flags, ref DeviceInfo info);

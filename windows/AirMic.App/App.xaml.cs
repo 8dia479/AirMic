@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 
 namespace AirMic.App;
@@ -7,18 +8,35 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        if (e.Args.Contains("--install-driver"))
+        string? mode = e.Args.FirstOrDefault(a => a is "--install" or "--uninstall" or "--install-driver");
+        if (mode is not null)
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
             try
             {
-                string result = await Task.Run(DriverInstaller.InstallEmbedded);
-                MessageBox.Show(result, "AirMic 드라이버 설치", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (!AppDeployment.IsAdministrator)
+                {
+                    var info = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = true, Verb = "runas" };
+                    info.ArgumentList.Add(mode);
+                    using Process child = Process.Start(info) ?? throw new InvalidOperationException("관리자 설치 프로세스 시작 실패");
+                    await child.WaitForExitAsync(); Shutdown(child.ExitCode); return;
+                }
+                if (mode == "--uninstall" && MessageBox.Show(
+                    "AirMic 앱과 전용 가상 오디오 장치를 제거할까요? 다른 오디오 장치는 건드리지 않고 사용자 설정은 보존합니다.",
+                    "AirMic 제거", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                { Shutdown(2); return; }
+                Func<string> operation = mode switch {
+                    "--install" => AppDeployment.Install,
+                    "--uninstall" => AppDeployment.Uninstall,
+                    _ => DriverInstaller.InstallEmbedded,
+                };
+                string result = await Task.Run(operation);
+                MessageBox.Show(result, "AirMic 설치 / 제거", MessageBoxButton.OK, MessageBoxImage.Information);
                 Shutdown(0);
             }
             catch (Exception error)
             {
-                MessageBox.Show(error.Message, "AirMic 설치 실패", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(error.Message, "AirMic 설치 / 제거 실패", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown(1);
             }
             return;

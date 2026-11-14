@@ -27,7 +27,7 @@ jobs:
           $code = $LASTEXITCODE
           Get-Content managed-tests.log
           if ($code -eq 0) {
-            $summary = (Get-Content managed-tests.log | Where-Object { $_ -match 'PASS:|allocation guard:' }) -join '%0A'
+            $summary = (Get-Content managed-tests.log | Where-Object { $_ -match 'PASS:|allocation guard:|VIRTUAL' }) -join '%0A'
             Write-Host "::notice title=Managed core result::$summary"
           }
           if ($code -ne 0) {
@@ -64,12 +64,22 @@ jobs:
           $app = Start-Process windows/AirMic.App/bin/Release/net10.0-windows/AirMic.exe -ArgumentList '--smoke-ui' -PassThru
           if (-not $app.WaitForExit(30000)) { $app.Kill(); throw 'WPF smoke timed out' }
           if ($app.ExitCode -ne 0) { throw "WPF smoke failed: $($app.ExitCode)" }
-      - name: Publish standalone diagnostic executable (NO bundled driver)
-        run: dotnet publish windows/AirMic.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=embedded -o artifacts/windows-diagnostic
+      - name: Publish standalone diagnostic executable + exact runtime notices (NO driver)
+        shell: pwsh
+        run: |
+          try {
+            ./tools/publish_windows.ps1 -DiagnosticOnly *> publish.log
+            Get-Content publish.log
+          } catch {
+            Get-Content publish.log -ErrorAction SilentlyContinue
+            $tail = ((Get-Content publish.log -Tail 30 -ErrorAction SilentlyContinue) -join "`n") + "`n" + $_.Exception.Message
+            Write-Host ("::error title=Single EXE publish::" + $tail.Replace('%','%25').Replace("`r",'%0D').Replace("`n",'%0A'))
+            exit 1
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: AirMic-windows-x64-DIAGNOSTIC-NO-DRIVER
-          path: artifacts/windows-diagnostic/AirMic.exe
+          path: artifacts/windows-diagnostic/
   android:
     runs-on: ubuntu-24.04
     steps:

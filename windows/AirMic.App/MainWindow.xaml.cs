@@ -62,9 +62,10 @@ public partial class MainWindow : Window
             bool found = render.Any(d => d.IsAirMic) && capture.Any(d => d.IsAirMic);
             DriverStatus.Text = found ? "AirMic 재생/녹음 endpoint 발견. 실제 마이크 전달은 소비 앱에서 확인하세요."
                 : "가상 마이크 미준비 · AirMic 전용 드라이버/endpoint가 없습니다. 수신 진단만 가능합니다.";
-            InstallDriverButton.IsEnabled = DriverInstaller.HasEmbeddedPackage && !busy && receiver is null;
-            if (!DriverInstaller.HasEmbeddedPackage)
-                DriverStatus.Text += "\n이 개발 빌드에는 정식 서명된 드라이버 패키지가 포함되지 않았습니다.";
+            InstallDriverButton.IsEnabled = AppDeployment.CanInstall && !busy && receiver is null;
+            UninstallButton.IsEnabled = AppDeployment.IsInstalled && !busy && receiver is null;
+            if (!AppDeployment.CanInstall)
+                DriverStatus.Text += "\n이 개발 빌드에는 정식 서명된 driver/배포 고지 설치 bundle이 없습니다.";
         }
         catch (Exception e) { Notice.Text = "장치 조회 실패: " + e.Message; }
     }
@@ -85,7 +86,8 @@ public partial class MainWindow : Window
         StartButton.IsEnabled = !running && !changing && !restartRequired;
         StopButton.IsEnabled = running && !changing;
         Port.IsEnabled = AllowedIp.IsEnabled = JitterMode.IsEnabled = Output.IsEnabled = RefreshButton.IsEnabled = !running && !changing;
-        InstallDriverButton.IsEnabled = !running && !changing && DriverInstaller.HasEmbeddedPackage;
+        InstallDriverButton.IsEnabled = !running && !changing && AppDeployment.CanInstall;
+        UninstallButton.IsEnabled = !running && !changing && AppDeployment.IsInstalled;
     }
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
@@ -178,17 +180,19 @@ public partial class MainWindow : Window
     private void Refresh_Click(object sender, RoutedEventArgs e) { if (!busy && receiver is null) RefreshDevices(); }
     private void CopyAddress_Click(object sender, RoutedEventArgs e)
     { try { Clipboard.SetText(Addresses.Text); } catch (Exception error) { Notice.Text = "복사 실패: " + error.Message; } }
-    private async void InstallDriver_Click(object sender, RoutedEventArgs e)
+    private async void InstallDriver_Click(object sender, RoutedEventArgs e) => await ChangeInstallation(false);
+    private async void Uninstall_Click(object sender, RoutedEventArgs e) => await ChangeInstallation(true);
+    private async Task ChangeInstallation(bool uninstall)
     {
-        if (busy || receiver is not null || !DriverInstaller.HasEmbeddedPackage) return;
+        if (busy || receiver is not null || (uninstall ? !AppDeployment.IsInstalled : !AppDeployment.CanInstall)) return;
         SetControls(false, true);
         try
         {
             var info = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = true, Verb = "runas" };
-            info.ArgumentList.Add("--install-driver");
+            info.ArgumentList.Add(uninstall ? "--uninstall" : "--install");
             using Process child = Process.Start(info) ?? throw new InvalidOperationException("설치 프로세스 시작 실패");
             await child.WaitForExitAsync();
-            Notice.Text = child.ExitCode == 0 ? "설치 처리가 끝났습니다. 재부팅이 요구됐으면 먼저 재부팅하세요." : "드라이버 설치 실패 또는 취소됨";
+            Notice.Text = child.ExitCode == 0 ? "설치/제거 처리가 끝났습니다. Windows 재부팅이 요구됐으면 먼저 재부팅하세요." : "설치/제거 실패 또는 취소됨";
             RefreshDevices();
         }
         catch (Exception error) { Notice.Text = "설치 시작 실패: " + error.Message; }

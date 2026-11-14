@@ -125,7 +125,7 @@ static class Tests
     }
     public static int Main()
     {
-        try { Protocol(); Sessions(); Queue(); Jitter(); PlayoutAllocation(); Udp(); Console.WriteLine($"PASS: {checks:N0} managed checks"); return 0; }
+        try { Protocol(); Sessions(); Queue(); Jitter(); PlayoutAllocation(); Udp(); MigrationTests.Run(); Console.WriteLine($"PASS: {checks:N0} managed checks"); return 0; }
         catch (Exception e) { Console.Error.WriteLine(e); return 1; }
     }
 }
