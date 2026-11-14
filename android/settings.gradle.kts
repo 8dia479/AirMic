@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "AirMic"
-include(":app")
+include(":app", ":dsp-host-tests")

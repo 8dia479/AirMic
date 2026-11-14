@@ -113,7 +113,7 @@ jobs:
         working-directory: android
         run: |
           set +e
-          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --no-daemon --stacktrace > ../android-build.log 2>&1
+          ./gradlew :app:testDebugUnitTest :dsp-host-tests:test :app:assembleDebug :app:lintDebug --no-daemon --stacktrace > ../android-build.log 2>&1
           result=$?
           set -e
           cat ../android-build.log
@@ -124,7 +124,7 @@ jobs:
           def annotation(level, title, message):
               text = str(message).replace('%','%25').replace('\n','%0A').replace('\r','%0D')
               print(f'::{level} title={title}::{text}')
-          reports = list(Path('app/build/test-results/testDebugUnitTest').glob('TEST-*.xml'))
+          reports = list(Path('app/build/test-results/testDebugUnitTest').glob('TEST-*.xml')) + list(Path('dsp-host-tests/build/test-results/test').glob('TEST-*.xml'))
           counts = {key: 0 for key in ('tests','failures','errors','skipped')}
           metrics = []
           for report in reports:
@@ -153,6 +153,7 @@ jobs:
             android-build.log
             android/app/build/reports/
             android/app/build/test-results/testDebugUnitTest/
+            android/dsp-host-tests/build/test-results/test/
             android/app/build/outputs/apk/debug/app-debug.apk
   legacy-reference:
     runs-on: ubuntu-latest

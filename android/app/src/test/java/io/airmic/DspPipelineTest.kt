@@ -1,7 +1,5 @@
 package io.airmic
 
-import com.sun.management.ThreadMXBean
-import java.lang.management.ManagementFactory
 import java.util.Random
 import kotlin.math.PI
 import kotlin.math.abs
@@ -190,27 +188,5 @@ class DspPipelineTest {
         process(7, .77f, AudioProtocol.DISCONTINUITY); assertTrue(frame.samples.all { it == 0f })
         process(-1, .33f, timestamp = 200_000); assertTrue(frame.samples.all { it == 0f })
         process(0, .44f, timestamp = 200_480); assertTrue(frame.samples.all { it == .33f }); assertEquals(0, frame.flags)
-    }
-    @Test(timeout = 30_000) fun warmedCoreAndRuntimeConfigurationDoNotAllocateOnTheJvm() {
-        val bean = ManagementFactory.getThreadMXBean() as ThreadMXBean
-        assertTrue(bean.isThreadAllocatedMemorySupported)
-        bean.isThreadAllocatedMemoryEnabled = true
-        val dsp = DspProcessor()
-        val signal = FloatArray(480) { tone(it) }; val frame = FloatArray(480)
-        val configs = arrayOf(DspConfig(), DspConfig(noiseSuppression = false, highPassHz = 120f, mid = 3f),
-            DspConfig(enabled = false), DspConfig(noiseReductionDb = 18f, compressorRatio = 4f))
-        repeat(3000) { index ->
-            if (index % 16 == 0) dsp.configure(configs[index / 16 and 3])
-            signal.copyInto(frame); dsp.process(frame)
-        }
-        val id = Thread.currentThread().id
-        val before = bean.getThreadAllocatedBytes(id)
-        repeat(2000) { index ->
-            if (index % 16 == 0) dsp.configure(configs[index / 16 and 3])
-            signal.copyInto(frame); dsp.process(frame)
-        }
-        val allocated = bean.getThreadAllocatedBytes(id) - before
-        println("DSP_METRIC warmed_allocated_bytes=$allocated frames=2000 includes_configure=true; HotSpot JVM core only, NOT ART/AudioRecord/network")
-        assertEquals("Kotlin DSP hot-path allocations", 0L, allocated)
     }
 }
