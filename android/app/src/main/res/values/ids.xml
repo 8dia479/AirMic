@@ -1,0 +1,4 @@
+<resources>
+    <item type="id" name="host_input" />
+    <item type="id" name="port_input" />
+</resources>

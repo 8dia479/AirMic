@@ -1,0 +1,78 @@
+name: Build and test AirMic
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release --parallel 2
+      - name: Unit and allocation tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Actual UDP impairment test (generated PCM / null sink)
+        if: runner.os == 'Linux'
+        run: ./build/airmic_loopback --seconds 10 --impair
+      - name: Windows executable smoke (no audio hardware)
+        if: runner.os == 'Windows'
+        run: ./build/windows/Release/airmic_receiver.exe --help
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: airmic-windows-x64-unsigned
+          path: build/windows/Release/airmic_receiver.exe
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DAIRMIC_SANITIZER=address
+      - run: cmake --build build --parallel 2
+      - run: ctest --test-dir build --output-on-failure
+
+  measurement-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r tools/requirements-latency.txt
+      - run: python -m unittest discover -s tests -p 'python_test_*.py' -v
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install pinned Android toolchain (runner licenses must be accepted)
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+      - name: Verify Gradle wrapper JAR
+        run: echo '2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046  android/gradle/wrapper/gradle-wrapper.jar' | sha256sum --check
+      - name: Build and lint (not a real-device test)
+        working-directory: android
+        run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: airmic-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk

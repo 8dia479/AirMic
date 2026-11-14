@@ -1,0 +1,63 @@
+{
+  "date_utc": "2026-11-14",
+  "branch": "arena/56cea872-airmic",
+  "mvp_acceptance": "BLOCKED: no Android toolchain, Galaxy Z Flip6, or Windows audio runtime",
+  "host": {
+    "os": "Linux x86_64",
+    "compiler": "GCC 12.2.0",
+    "cmake": "3.31.10",
+    "python": "3.11.2"
+  },
+  "observed_tests": {
+    "release_ctest": {
+      "passed": 2,
+      "total": 2,
+      "core_checks": 348731
+    },
+    "core_realtime_new_allocations": 0,
+    "asan_ubsan_ctest": {
+      "passed": 2,
+      "total": 2
+    },
+    "tsan_ctest": {
+      "passed": 2,
+      "total": 2
+    },
+    "python_tests": {
+      "passed": 7,
+      "total": 7
+    },
+    "virtual_clock_drift": {
+      "rates_ppm": [
+        -250,
+        -100,
+        100,
+        250
+      ],
+      "seconds_each": 600,
+      "passed": true
+    }
+  },
+  "android": {
+    "gradle_build_attempted": true,
+    "build_succeeded": false,
+    "failure": "No JAVA_HOME/java; SDK/NDK also absent",
+    "audio_engine_host_syntax_with_official_oboe_headers": true,
+    "kotlin_dsl_syntax_parse_files": 7,
+    "kotlin_compiler_typecheck": false,
+    "xml_parse_files": 3,
+    "device_tested": false,
+    "apk": null
+  },
+  "windows": {
+    "cross_compile_link": true,
+    "compiler": "Zig 0.13.0 / Clang 18.1.6",
+    "format": "PE x86-64",
+    "receiver_and_tests_built": true,
+    "native_msvc_build": false,
+    "runtime_tested": false,
+    "wasapi_vb_cable_tested": false
+  },
+  "hardware_end_to_end_latency_ms": null,
+  "remote_ci_executed": false
+}

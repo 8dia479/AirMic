@@ -1,0 +1,312 @@
+{
+  "schema_version": 1,
+  "review_date_utc": "2026-11-14",
+  "scope": "Source/API/build/licensing review and candidate selection only; no backend integration.",
+  "decision": {
+    "review_status": "complete",
+    "first_candidate": "WebRTC Audio Processing",
+    "optional_additional_noise_suppression": "RNNoise",
+    "default_double_suppression": false,
+    "backends_integrated": false,
+    "new_runtime_dependencies": false,
+    "binary_package_rebuilt_in_this_review": false
+  },
+  "environment": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "c_compiler": "gcc (Debian 12.2.0-14+deb12u1) 12.2.0",
+    "cxx_compiler": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0",
+    "python": "3.11.2"
+  },
+  "webrtc": {
+    "canonical_repository": "https://webrtc.googlesource.com/src/",
+    "acquisition_mirror": "https://github.com/webrtc-mirror/webrtc",
+    "review_commit": "3710345e71ad3a7c1f4ed4efef152fd4fc24869a",
+    "committer_date_utc": "2026-01-13T21:19:58Z",
+    "selection_kind": "review snapshot, not an application dependency pin",
+    "latest_official_release_verified": false,
+    "canonical_verification": {
+      "method": "Official Gitiles commit/tree and file blob metadata compared with downloaded Git blobs.",
+      "commit_url": "https://webrtc.googlesource.com/src/+/3710345e71ad3a7c1f4ed4efef152fd4fc24869a?format=JSON",
+      "commit_tree": "25690113e48d9fcc915a6e272e8e460c5a1aa96d",
+      "api_header_blob": "a61749331f6412cd3cefc503e9447c4103207642",
+      "api_header_metadata_url": "https://webrtc.googlesource.com/src/+/3710345e71ad3a7c1f4ed4efef152fd4fc24869a/api/audio/audio_processing.h?format=JSON",
+      "license_blob": "4c41b7b251e2f7606c70fad48eb92c8a2bc8e357",
+      "patents_blob": "190607ac2619bcb28f5c3af61a2fda3953364f7c",
+      "matched": true
+    },
+    "verified_source_blob_count": 15,
+    "inspected_files": [
+      {
+        "path": "README.md",
+        "git_blob": "32b9f16bad0e0b3389faeca098c97eb0ef16a0e3",
+        "sha256": "f48373cd9e18363129403076d86e581d57222ed048d2e039ab6848c4f49b734f"
+      },
+      {
+        "path": "LICENSE",
+        "git_blob": "4c41b7b251e2f7606c70fad48eb92c8a2bc8e357",
+        "sha256": "ab00a482b6a3902e40211b43c5d0441962ea99b6cc7c25c0f243fa270b78d482"
+      },
+      {
+        "path": "PATENTS",
+        "git_blob": "190607ac2619bcb28f5c3af61a2fda3953364f7c",
+        "sha256": "01462e2068d1a04c2274f3389773014c14ed9bc3446b28303543bd3e3c064145"
+      },
+      {
+        "path": "DEPS",
+        "git_blob": "3aa59e999aaea052e1ff77de4f37ce151344edcd",
+        "sha256": "ee57da3d2ae22825a01cd62b71921905a7a86f31ce049e79e2cb2ad1589a88bb"
+      },
+      {
+        "path": "webrtc.gni",
+        "git_blob": "9a33dcaba6099761abcf7b661d77983f9911b061",
+        "sha256": "3232d33c2ca7a46244a2d4b71ed69f206bd7cfe81afbc30cce9b7ae9a5e9f10b"
+      },
+      {
+        "path": "api/audio/audio_processing.h",
+        "git_blob": "a61749331f6412cd3cefc503e9447c4103207642",
+        "sha256": "60c6192aac2d17c57e7026640753fcb1748782d4eb666a09035ce662f65817e3"
+      },
+      {
+        "path": "api/audio/audio_processing.cc",
+        "git_blob": "76f0d71ddc0df17574fc608db393b6a61729db1e",
+        "sha256": "127178cfc748fa8b391d6f7e35454311969a2ce1b09a275b5e7d1e21e915f671"
+      },
+      {
+        "path": "api/audio/builtin_audio_processing_builder.h",
+        "git_blob": "396bfcaf1f8dceca99ea9f1fb29840335f9965e3",
+        "sha256": "2999e2c8a8010f7a124921284faf3d969966ea371c5d7a9938ce6686cb18d186"
+      },
+      {
+        "path": "api/audio/builtin_audio_processing_builder.cc",
+        "git_blob": "b93187d68d5bdb897aac9199984d5fef19786228",
+        "sha256": "b6ca065a9bd7a900e3cc45b135ae342ee25912a70b9b4f39b5900367ddca3647"
+      },
+      {
+        "path": "api/audio/BUILD.gn",
+        "git_blob": "a5e6ce506d437e683a3f9bd60b6ee37f329ff2eb",
+        "sha256": "7c443beab88d42d3fbe4ede7d7c9d52dbdc027071710f30d921562b16027b1bc"
+      },
+      {
+        "path": "modules/audio_processing/BUILD.gn",
+        "git_blob": "e2e4118cf140fb43505cb54e46d82588edec2886",
+        "sha256": "19c58a0adac5c1841ed6c463bbe7c2eb171977caf260e3a2a0950b3e38bcdac9"
+      },
+      {
+        "path": "modules/audio_processing/audio_processing_impl.h",
+        "git_blob": "36abae2fcad3c53f4dc5e1ff155da7e527ec485a",
+        "sha256": "1b33bfb1c7f32051cc0ef74765e1154e50983bd7074fc19174ed5a4ffe37b359"
+      },
+      {
+        "path": "modules/audio_processing/audio_processing_impl.cc",
+        "git_blob": "eb25dc27f0fe5efd37ec31476ef7fb0d36e5ee6d",
+        "sha256": "d5ee261f3e41ce3606619a829ec02c1e73e22d2ba77c36e041774c0923b8e172"
+      },
+      {
+        "path": "modules/audio_processing/ns/noise_suppressor.cc",
+        "git_blob": "47030c2acdfcdb4dc57eb4c9b95351b543a011bf",
+        "sha256": "891b5a25f0cc2284d404ed221466729ad0648313d3a626c3a7754eea6e0f8668"
+      },
+      {
+        "path": "modules/audio_processing/ns/ns_common.h",
+        "git_blob": "d6149f72a78383b9efb18160cf4cc4b36e77770a",
+        "sha256": "c9f004acc0769e4e548467277004b79b3952db4982505cd5db25b310cf4ca20b"
+      }
+    ],
+    "full_dependency_closure_audited": false,
+    "build_and_runtime_tested": false,
+    "api_findings": {
+      "frame_samples_at_48khz": 480,
+      "float_layout": "deinterleaved channels",
+      "float_range": "[-1, 1]",
+      "internal_mutexes": true,
+      "config_changes_can_allocate_or_reset": true,
+      "ns_enable_or_level_in_runtime_setting_enum": false
+    },
+    "licensing": {
+      "root_license": "BSD-3-Clause",
+      "additional_grant": "PATENTS (scope/termination conditions apply)",
+      "transitive_dependency_notices_required": true,
+      "redistribution_approved": false
+    }
+  },
+  "rnnoise": {
+    "canonical_repository": "https://gitlab.xiph.org/xiph/rnnoise",
+    "acquisition_convenience_copy": "https://github.com/xiph/rnnoise",
+    "review_tag": "v0.2",
+    "review_commit": "904a876dce1f9ab8860c0a5000ed151f9f6eef58",
+    "committer_date_utc": "2024-04-15T01:07:37Z",
+    "canonical_commit_verified": true,
+    "canonical_commit_api_url": "https://gitlab.xiph.org/api/v4/projects/xiph%2Frnnoise/repository/commits/904a876dce1f9ab8860c0a5000ed151f9f6eef58",
+    "canonical_header_and_copying_read": true,
+    "archive_url": "https://codeload.github.com/xiph/rnnoise/tar.gz/904a876dce1f9ab8860c0a5000ed151f9f6eef58",
+    "archive_sha256": "975488a6b6ed404b176f9e7a72b418470e50b1e7596f875eb7799f5b785e3ebf",
+    "archive_git_tree_blobs_verified": 78,
+    "inspected_files": [
+      {
+        "path": "README",
+        "git_blob": "0a780dac4655e5ed9c249b0d76bfe93d409e94c3",
+        "sha256": "b55ef1c31a1eca2a6139b870b40385a36c28cf9e3eb584ac7fbf57808c9c469a"
+      },
+      {
+        "path": "COPYING",
+        "git_blob": "59d7d09c80c17e60a972bf730caf6a3e005b17b1",
+        "sha256": "45d37ca1cdb278c088e1aa85e0e65ca3a534ed86a28dcc96ca16810248a61d35"
+      },
+      {
+        "path": "include/rnnoise.h",
+        "git_blob": "2d52b96699db475abe138c9c98e388e0c6439096",
+        "sha256": "424d75212a781147f40666f511309d1c054d946eca44af2de4cd1b3346f09276"
+      },
+      {
+        "path": "examples/rnnoise_demo.c",
+        "git_blob": "0be505f7f115f1e8c142d7b128eb05e4bc5b27bf",
+        "sha256": "644064fcf3c1762e4d2e6341d59dc2db2e0cea4ba5d42e62767411e387014c98"
+      },
+      {
+        "path": "src/denoise.c",
+        "git_blob": "c2dff7ea3e513ecc6af99521edc2ac3c8675a29c",
+        "sha256": "a7759a51af88381d135ed90f6e73919a6f9540845e437749758f6f0dc608e4c4"
+      },
+      {
+        "path": "src/denoise.h",
+        "git_blob": "ccfecd9a7e2d6e0b337a93c29a9d1a8acb2b171a",
+        "sha256": "3ea8149b47b51b76a1eef308cc38168731693b74ed3f64330b55583f92dcc071"
+      },
+      {
+        "path": "src/rnn.c",
+        "git_blob": "44301edd8696e86852b820d1cab304a07da1ec2c",
+        "sha256": "1a72e1d568c7930e89bdfd072291930775ac842bf5373e26adb6350c3fbb0454"
+      },
+      {
+        "path": "src/nnet.c",
+        "git_blob": "3cafea6051a858ba316a32478b59255863fb7222",
+        "sha256": "3a2c1dc09ad7e9dfe3cf32cfb94694935dc462488da8f513d1f308db39f7c087"
+      },
+      {
+        "path": "src/nnet_arch.h",
+        "git_blob": "dfd5eaadeaf6b8ee00257de58d0c114e32d52aa3",
+        "sha256": "76068e63007b072b0c20410cee89c0ab5158438d5201b466850354c0aee33688"
+      },
+      {
+        "path": "src/vec_neon.h",
+        "git_blob": "e6432e2f5e7a96791e2ff08ca993f970e782c7f6",
+        "sha256": "225dbe25b0df10bcb1ee01eabfcc7cab2e27d1b30c0ff2c79bd3a517c918523e"
+      },
+      {
+        "path": "src/vec_avx.h",
+        "git_blob": "b73a35335aa57b5d7135f6749a9648caff14c4f9",
+        "sha256": "8fb02f2f54822e8bf0189c2ccd7e9071d7654d4c0630e2a6a6b15a3accfa7ac2"
+      },
+      {
+        "path": "Makefile.am",
+        "git_blob": "737999db3d19465aa6deb8d57243dd684d8675d9",
+        "sha256": "6b092f644a52624fa5022ce3a01264641b329dfd38c13f287ef3c9402abf9e60"
+      },
+      {
+        "path": "configure.ac",
+        "git_blob": "da3fff3a6917570fe9d9cc5fbaded7e4edb0f309",
+        "sha256": "87fa5e8b6da2411968cb8b11c26f343d29961eb71f487d9784ef561f3d2db954"
+      },
+      {
+        "path": "autogen.sh",
+        "git_blob": "dde692acc700abe50c00d864bd11d1cc72adc5c2",
+        "sha256": "b2b20ed9449907b7c0f34c72e693fc09bafb1edc7856c279179701206730ba5c"
+      },
+      {
+        "path": "download_model.sh",
+        "git_blob": "3c220b38ab01b1f2e6668f0d3af854ac1205395e",
+        "sha256": "fcd4a7de8ad005a225997f96347a15cd39f090b3a963bceba817894819767c30"
+      },
+      {
+        "path": "model_version",
+        "git_blob": "0f9d909c6a25ce0595556c597976d7a97b98a80f",
+        "sha256": "456c01c6a60f3c946913e57934ded8213496c1d6933a3f0b17a857e8fc2ffc99"
+      },
+      {
+        "path": "datasets.txt",
+        "git_blob": "fb5d9ced1e8ec5754217e3c30d71e49249dbf76c",
+        "sha256": "2fc9a7509b242af0dd65c1d29aef0a57af4d1aca8de65b60ed2aca7eed829ada"
+      }
+    ],
+    "api_findings": {
+      "frame_samples": 480,
+      "demo_sample_rate_hz": 48000,
+      "float_scale": "PCM16 magnitude, not normalized [-1, 1]",
+      "normalize_adapter_factors": [
+        32768.0,
+        3.0517578125e-05
+      ],
+      "process_frame_return": "voice activity probability; audio is written to out",
+      "analysis_window_samples": 960,
+      "delayed_spectrum_state": true,
+      "exact_algorithmic_delay_measured": false
+    },
+    "model": {
+      "model_version_file": "0b50c45",
+      "upstream_archive_url": "https://media.xiph.org/rnnoise/models/rnnoise_data-0b50c45.tar.gz",
+      "obtained": false,
+      "fetch_page_attempt": "HTTP 500; archive contents not available for this review",
+      "sha256": null,
+      "archive_license_terms_verified": false,
+      "weights_bundled": false,
+      "redistribution_approved": false,
+      "upstream_download_script_checks_digest": false
+    },
+    "source_license": "BSD-3-Clause in COPYING; retain per-file notices too",
+    "full_library_built_or_inference_tested": false
+  },
+  "executed_checks": [
+    {
+      "name": "RNNoise real header C++20 syntax/signature",
+      "status": "PASS",
+      "exit_code": 0,
+      "command": "g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -Ishared -Ibuild/dsp-review/rnnoise/include -fsyntax-only build/dsp-review/checks/rnnoise_api_probe.cpp",
+      "probe_source": "#include \"rnnoise.h\"\n#include \"dsp/processor.hpp\"\n#include <type_traits>\n\nstatic_assert(airmic::kFrameSamples == 480);\nstatic_assert(std::is_same_v<decltype(&rnnoise_process_frame),\n                             float (*)(DenoiseState*, float*, const float*)>);\nstatic_assert(std::is_same_v<decltype(&rnnoise_init), int (*)(DenoiseState*, RNNModel*)>);\nstatic_assert(std::is_same_v<decltype(&rnnoise_get_frame_size), int (*)()>);\n\nfloat signature_probe(DenoiseState* state, float* output, const float* input) {\n    return rnnoise_process_frame(state, output, input);\n}\n",
+      "linked": false,
+      "runtime_test": false
+    },
+    {
+      "name": "RNNoise real header C11 syntax/call",
+      "status": "PASS",
+      "exit_code": 0,
+      "command": "gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Ibuild/dsp-review/rnnoise/include -fsyntax-only build/dsp-review/checks/rnnoise_api_probe.c",
+      "probe_source": "#include \"rnnoise.h\"\n\nfloat signature_probe(DenoiseState* state, float* output, const float* input) {\n    return rnnoise_process_frame(state, output, input);\n}\nint state_init_probe(DenoiseState* state, RNNModel* model) {\n    return rnnoise_init(state, model);\n}\n",
+      "linked": false,
+      "runtime_test": false
+    },
+    {
+      "name": "Unmodified AirMic host core rebuild/run",
+      "status": "PASS",
+      "build_command": "g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -pthread -Ishared tests/core_tests.cpp shared/protocol/packet.cpp shared/audio/jitter_buffer.cpp shared/audio/playout.cpp shared/dsp/processor.cpp -o build/dsp-review/checks/airmic_core_tests",
+      "run_command": "build/dsp-review/checks/airmic_core_tests",
+      "build_exit_code": 0,
+      "run_exit_code": 0,
+      "checks": 348731,
+      "stdout": "PASS: 348731 checks (protocol/fuzz, SPSC, capture, session, jitter/PLC/wrap, DSP, 10-min virtual drift)",
+      "build_warning": "tests/core_tests.cpp:157:26: warning: comparison of integer expressions of different signedness: 'std::array<short int, 480>::value_type' {aka 'short int'} and 'uint32_t' {aka 'unsigned int'} [-Wsign-compare]",
+      "coverage": "Existing AirMic implementation only; no APM/RNNoise linked."
+    },
+    {
+      "name": "Unmodified AirMic RT core rebuild/run",
+      "status": "PASS",
+      "build_command": "g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -pthread -Ishared tests/realtime_allocations.cpp shared/protocol/packet.cpp shared/audio/jitter_buffer.cpp shared/audio/playout.cpp shared/dsp/processor.cpp -o build/dsp-review/checks/airmic_rt_tests",
+      "run_command": "build/dsp-review/checks/airmic_rt_tests",
+      "build_exit_code": 0,
+      "run_exit_code": 0,
+      "stdout": "RT core new/new[] allocations: 0",
+      "new_and_new_array_allocations": 0,
+      "coverage": "Existing AirMic core instrumentation, including aligned new. Not OS-wide malloc or external backend validation."
+    }
+  ],
+  "not_tested": [
+    "Full WebRTC GN/DEPS build/link",
+    "RNNoise library build with actual model or inference",
+    "Android NDK/APK integration or Galaxy Z Flip6 execution",
+    "Windows native runtime/WASAPI/VB-CABLE with either backend",
+    "External-backend CPU/memory/allocation/quality/latency/thermal/battery benchmarks",
+    "RNNoise model archive provenance/license/digest",
+    "Physical end-to-end latency or 600-second hardware acceptance"
+  ],
+  "interpretation": "Review and selection are complete. No backend is implemented or benchmarked. Existing MVP hardware blockers remain."
+}

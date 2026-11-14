@@ -1,0 +1,28 @@
+# Native / host builds
+/build*/
+/windows/build*/
+/out/
+.vs/
+/CMakeUserPresets.json
+/android/**/.cxx/
+/android/.gradle/
+/android/**/build/
+/android/local.properties
+/android/cpp/third_party/
+# Zig 0.13 / CMake preprocessor detection scratch output
+/-
+# Local tools and measurements (do not commit generated binaries/audio)
+/.tools/
+/artifacts/
+*.wav
+*.pcm
+*.apk
+*.aab
+*.exe
+*.pdb
+*.dmp
+__pycache__/
+.venv/
+.idea/
+.vscode/
+*.iml

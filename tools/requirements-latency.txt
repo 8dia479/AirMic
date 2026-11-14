@@ -1,0 +1,2 @@
+# Optional offline WAV analysis only. Not needed by the Android/Windows engines.
+numpy==2.2.6
