@@ -55,13 +55,18 @@ public partial class MainWindow : Window
             Addresses.Text = addresses.Length == 0 ? "활성 LAN IPv4 없음" : string.Join(" / ", addresses);
             List<AudioEndpoint> render = WindowsAudio.Enumerate(false), capture = WindowsAudio.Enumerate(true);
             var choices = new List<OutputChoice> { new("수신 진단만 · 시스템 마이크 / 스피커 출력 없음", null) };
-            choices.AddRange(render.Select(d => new OutputChoice((d.IsAirMic ? "[AirMic] " : "[청취 전용] ") + d.Name, d)));
+            choices.AddRange(render.Select(d => new OutputChoice(
+                (d.IsAirMic ? "[AirMic] " : d.IsVirtualCable ? "[가상 마이크 케이블] " : "[청취 전용] ") + d.Name, d)));
             Output.ItemsSource = choices;
             Output.SelectedItem = choices.FirstOrDefault(c => c.Endpoint?.Id == settings.EndpointId)
-                ?? choices.FirstOrDefault(c => c.Endpoint?.IsAirMic == true) ?? choices[0];
+                ?? choices.FirstOrDefault(c => c.Endpoint?.IsAirMic == true)
+                ?? choices.FirstOrDefault(c => c.Endpoint?.IsVirtualCable == true) ?? choices[0];
             bool found = render.Any(d => d.IsAirMic) && capture.Any(d => d.IsAirMic);
+            bool cableRender = render.Any(d => d.IsVirtualCable && d.Name.Contains("CABLE Input", StringComparison.OrdinalIgnoreCase));
+            bool cableCapture = capture.Any(d => d.IsVirtualCable && d.Name.Contains("CABLE Output", StringComparison.OrdinalIgnoreCase));
             DriverStatus.Text = found ? "AirMic 재생/녹음 endpoint 발견. 실제 마이크 전달은 소비 앱에서 확인하세요."
-                : "가상 마이크 미준비 · AirMic 전용 드라이버/endpoint가 없습니다. 수신 진단만 가능합니다.";
+                : cableRender && cableCapture ? "VB-CABLE 발견 · 출력에서 CABLE Input을 선택하고 Discord/게임 입력에서 CABLE Output을 선택하세요."
+                : "가상 마이크 미준비 · VB-CABLE 또는 서명된 AirMic 드라이버가 필요합니다. VB-CABLE이 없다면 별도로 설치하세요.";
             InstallDriverButton.IsEnabled = AppDeployment.CanInstall && !busy && receiver is null;
             UninstallButton.IsEnabled = AppDeployment.IsInstalled && !busy && receiver is null;
             if (!AppDeployment.CanInstall)
@@ -100,7 +105,7 @@ public partial class MainWindow : Window
         { Notice.Text = "휴대폰 IPv4 주소를 확인하세요."; return; }
         var choice = Output.SelectedItem as OutputChoice;
         if (choice is null) return;
-        if (choice.Endpoint is { IsAirMic: false } && MessageBox.Show(
+        if (choice.Endpoint is { IsAirMic: false, IsVirtualCable: false } && MessageBox.Show(
             "일반 출력 장치는 청취용입니다. 시스템 마이크가 되지 않으며 하울링이 생길 수 있습니다. 계속할까요?",
             "AirMic 청취", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
         int jitterIndex = JitterMode.SelectedIndex;
@@ -122,10 +127,12 @@ public partial class MainWindow : Window
                 }
                 catch { audio?.Dispose(); throw; }
             });
-            receiver = created.network; renderer = created.audio; virtualRoute = endpoint?.IsAirMic == true;
+            receiver = created.network; renderer = created.audio; virtualRoute = endpoint?.IsAirMic == true || endpoint?.IsVirtualCable == true;
             settings = new(port, AllowedIp.Text.Trim(), jitterIndex, endpoint?.Id ?? "", Volume.Value);
             SaveSettings(); SetControls(true);
-            Notice.Text = virtualRoute ? "소비 앱에서 AirMic Microphone을 선택하세요. 실제 전달은 별도 확인이 필요합니다."
+            Notice.Text = endpoint?.IsVirtualCable == true
+                ? "전송 중 · Discord/게임의 입력 장치에서 CABLE Output (VB-Audio Virtual Cable)을 선택하세요."
+                : virtualRoute ? "소비 앱에서 AirMic Microphone을 선택하세요. 실제 전달은 별도 확인이 필요합니다."
                 : endpoint is null ? "수신 진단 모드입니다. 다른 앱에서 마이크로 사용할 수 없습니다."
                 : "청취 전용입니다. 다른 앱에 마이크로 전달하지 않습니다.";
         }
