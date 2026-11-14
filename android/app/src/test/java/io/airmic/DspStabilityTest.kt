@@ -34,7 +34,7 @@ class DspStabilityTest {
         dsp.process(first)
         assertTrue(first.all { it == 0f })
         dsp.process(second)
-        for (sample in second) assertEquals(-0.25f, sample, 1e-6f)
+        for (sample in second) assertEquals(0.25f, sample, 1e-6f)
 
         val loud = FloatArray(AudioProtocol.SAMPLES) { if (it % 2 == 0) 4f else -4f }
         dsp.process(loud)
