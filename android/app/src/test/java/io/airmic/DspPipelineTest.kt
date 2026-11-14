@@ -84,6 +84,35 @@ class DspPipelineTest {
         println("DSP_METRIC raised_noise_floor_reduction_db=$reduction; synthetic stationary-noise fixture")
         assertTrue("Noise model did not adapt: $reduction dB", reduction > 5)
     }
+    @Test fun coherentSignalAtStartupDoesNotRequireASilentCalibrationPeriod() {
+        val ns = NoiseSuppressor(); val block = FloatArray(480); val random = Random(94)
+        var cleanPower = 0.0; var projection = 0.0
+        repeat(200) { frame ->
+            for (i in block.indices) block[i] = tone(frame * 480 + i) + (random.nextGaussian() * .005).toFloat()
+            ns.process(block)
+            if (frame >= 50) for (i in block.indices) {
+                val expected = tone((frame - 1) * 480 + i).toDouble()
+                cleanPower += expected * expected; projection += expected * block[i]
+            }
+        }
+        val retained = projection / cleanPower
+        println("DSP_METRIC startup_coherent_signal_gain=$retained; three-tone proxy at first frame, NOT arbitrary speech preservation")
+        assertTrue("Startup active component was learned as noise: $retained", retained in .8..1.1)
+    }
+    @Test fun runtimeNoiseSuppressionToggleKeepsTheSameDelayAndWarmState() {
+        val ns = NoiseSuppressor(); val block = FloatArray(480); val random = Random(51)
+        var previous = FloatArray(480)
+        repeat(120) { frame ->
+            if (frame == 100) ns.configure(false, 12f)
+            if (frame == 110) ns.configure(true, 12f)
+            val source = FloatArray(480) { (random.nextGaussian() * .02).toFloat() }
+            source.copyInto(block); ns.process(block)
+            if (frame in 101..109) assertArrayEquals(previous, block, 0f)
+            if (frame >= 110) assertTrue("Toggle unexpectedly reset/emptied the overlap", block.any { abs(it) > 1e-5f })
+            assertTrue(block.all { it.isFinite() })
+            previous = source
+        }
+    }
     @Test fun highPassHasSpecifiedLowAndVoiceBandResponse() {
         fun response(hz: Double): Double {
             val filter = HighPassFilter(); var before = 0.0; var after = 0.0

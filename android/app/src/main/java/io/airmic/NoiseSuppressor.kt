@@ -86,17 +86,22 @@ internal class NoiseSuppressor {
             val background = max(EPSILON, neighbours / max(1, count))
             val tonal = smoothed[k] > 4.0 * background
             if (!primed) noise[k] = max(EPSILON, min(power[k], background))
-            val speechRise = smoothed[k] > 2.5 * max(EPSILON, minimum)
+            val speechRise = smoothed[k] > 2.5 * max(EPSILON, minimum) && smoothed[k] > 1.8 * noise[k]
+            // Noise-like bins need a symmetric update: making every downward
+            // fluctuation faster than upward ones systematically underestimates
+            // the PSD and leaves stationary noise unsuppressed. Only a coherent
+            // component or an actual rise above BOTH floor estimates slows growth.
             val adaptation = when {
-                power[k] < noise[k] -> 0.15
-                tonal -> 0.0002
-                speechRise -> 0.002
+                power[k] > noise[k] && tonal -> 0.0002
+                power[k] > noise[k] && speechRise -> 0.002
                 else -> 0.06
             }
             noise[k] = max(EPSILON, noise[k] + adaptation * (power[k] - noise[k]))
             val posterior = power[k] / noise[k]
             val prior = 0.96 * previousClean[k] / noise[k] + 0.04 * max(0.0, posterior - 1.0)
-            desiredGains[k] = max(minimumGain, sqrt(prior / (1.0 + prior))).coerceIn(0.0, 1.0)
+            // Wiener AMPLITUDE gain, not its square root, which would leave
+            // too much noise in bins with near-unity a-posteriori SNR.
+            desiredGains[k] = max(minimumGain, prior / (1.0 + prior)).coerceIn(0.0, 1.0)
         }
         for (k in 0 until BINS) {
             // Frequency and asymmetric time smoothing limit musical-noise/pumping.

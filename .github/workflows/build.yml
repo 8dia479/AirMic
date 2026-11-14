@@ -127,8 +127,10 @@ jobs:
           reports = list(Path('app/build/test-results/testDebugUnitTest').glob('TEST-*.xml')) + list(Path('dsp-host-tests/build/test-results/test').glob('TEST-*.xml'))
           counts = {key: 0 for key in ('tests','failures','errors','skipped')}
           metrics = []
+          suites = set()
           for report in reports:
               root = E.parse(report).getroot()
+              suites.add(root.get('name'))
               for key in counts: counts[key] += int(root.get(key, '0'))
               for case in root.findall('testcase'):
                   for failure in list(case.findall('failure')) + list(case.findall('error')):
@@ -139,7 +141,8 @@ jobs:
           built = sys.argv[1] == '0'
           annotation('notice', 'Kotlin tests', str(counts) + ('; APK and lint completed' if built else '; build failed, see log') + '; AudioRecord hardware not tested')
           if built:
-              assert reports and counts['tests'] >= 16 and counts['failures'] == counts['errors'] == counts['skipped'] == 0, counts
+              assert {'io.airmic.AudioCoreTest','io.airmic.DspPipelineTest','io.airmic.DspAllocationTest'} <= suites, suites
+              assert reports and counts['tests'] >= 18 and counts['failures'] == counts['errors'] == counts['skipped'] == 0, counts
           PYTEST
           if [ "$result" -ne 0 ]; then
             python3 -c 'from pathlib import Path; s=Path("../android-build.log").read_text(); lines=[x for x in s.splitlines() if any(y in x for y in ("e: "," error:","Error:","What went wrong","Execution failed"))]; text="\n".join(lines or s.splitlines()[-35:])[-6000:]; print("::error title=Android build failure::"+text.replace("%","%25").replace("\n","%0A").replace("\r","%0D"))'
