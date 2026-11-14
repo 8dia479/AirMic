@@ -37,6 +37,12 @@ try {
     if (-not $inf2cat) { throw 'Inf2Cat not found in pinned WDK packages.' }
     & $inf2cat.FullName "/driver:$output" '/os:10_VB_X64,10_NI_X64' /uselocaltime
     if ($LASTEXITCODE -ne 0) { throw "Driver catalog validation failed: $LASTEXITCODE" }
+    if (-not (Test-Path (Join-Path $output 'AirMic.cat') -PathType Leaf)) { throw 'Inf2Cat did not produce AirMic.cat.' }
+    $hashes = @('AirMic.sys', 'AirMic.inf', 'AirMic.cat') | ForEach-Object {
+        $file = Get-Item (Join-Path $output $_)
+        "$($file.Name): $($file.Length) bytes; SHA256=$((Get-FileHash $file.FullName -Algorithm SHA256).Hash)"
+    }
+    Write-Host ('::notice title=UNSIGNED WDK build::SYS/INF/CAT generated; Win10 19041 + Win11 catalog validation passed. NO signing, installation or device test.%0A' + ($hashes -join '%0A'))
     Copy-Item driver/sysvad/LICENSE (Join-Path $output 'SYSVAD-LICENSE.txt') -Force
     Copy-Item driver/UPSTREAM.md (Join-Path $output 'SYSVAD-NOTICE.txt') -Force
     Copy-Item LICENSE (Join-Path $output 'AIRMIC-LICENSE.txt') -Force

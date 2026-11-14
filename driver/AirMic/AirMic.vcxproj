@@ -21,6 +21,8 @@
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
     <DriverTargetPlatform>Universal</DriverTargetPlatform>
     <TargetVersion>Windows10</TargetVersion>
+    <!-- Windows 10 2004 / build 19041 is the actual minimum, not latest WDK defaults. -->
+    <_NT_TARGET_VERSION>0x0A000008</_NT_TARGET_VERSION>
     <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
     <UseDebugLibraries Condition="'$(Configuration)'!='Debug'">false</UseDebugLibraries>
   </PropertyGroup>

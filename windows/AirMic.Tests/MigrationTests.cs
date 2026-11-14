@@ -53,6 +53,37 @@ static class MigrationTests
         Check(DriverPackage.SafeName("AirMic.sys") && DriverPackage.SafeName("SYSVAD-LICENSE.txt"), "Safe name rejected");
         Console.WriteLine("PASS: driver package validation (synthetic ZIP fixtures only; NOT driver signing or installation)");
     }
+    static void InstallJournal()
+    {
+        string first = new('a', 64), second = new('b', 64);
+        var fresh = AppInstallState.Empty.Prepare(first, ["AirMic.exe", "LICENSE.txt"]);
+        Check(fresh.Current == first && fresh.Pending == first, "First-install recovery record");
+        fresh = AppInstallState.Read(fresh.Serialize()).Complete(first);
+        Check(fresh.Pending == "" && fresh.Versions.Count == 1, "First install completion");
+        var pending = fresh.Prepare(second, ["AirMic.exe", "LICENSE.txt"]);
+        // A failed external driver/registry call must not make the previous app or
+        // candidate files disappear from the durable repair/uninstall journal.
+        var recovered = AppInstallState.Read(pending.Serialize());
+        Check(recovered.Current == first && recovered.Pending == second && recovered.Versions.Count == 2, "Interrupted upgrade recovery");
+        var completed = recovered.Complete(second);
+        Check(completed.Current == second && completed.Pending == "" && completed.Versions[0].Folder == first, "Upgrade commit");
+        var repair = completed.Prepare(second, ["AirMic.exe", "LICENSE.txt"]).Complete(second);
+        Check(repair.Versions.Count == 2, "Idempotent same-version repair");
+        void RejectState(AppInstallState state)
+        {
+            try { AppInstallState.Read(JsonSerializer.SerializeToUtf8Bytes(state)); }
+            catch (InvalidDataException) { return; }
+            throw new InvalidOperationException("Unsafe installation journal accepted");
+        }
+        RejectState(fresh with { Current = second }); RejectState(fresh with { Pending = second });
+        RejectState(fresh with { SchemaVersion = 2 }); RejectState(fresh with { Versions = [] });
+        RejectState(fresh with { Versions = [new("../escape", ["AirMic.exe"])] });
+        RejectState(fresh with { Versions = [new(first, ["AirMic.exe", "../escape"])] });
+        RejectState(fresh with { Versions = [new(first, ["AirMic.exe", "airmic.EXE"])] });
+        RejectState(fresh with { Versions = [new(first, ["LICENSE.txt"])] });
+        RejectState(fresh with { Versions = [fresh.Versions[0], fresh.Versions[0]] });
+        Console.WriteLine("PASS: install journal / interrupted upgrade recovery (portable state tests, NOT Windows install/uninstall)");
+    }
     static void VirtualClock()
     {
         foreach (int drift in new[] { -200, 0, 200 })
@@ -82,5 +113,5 @@ static class MigrationTests
             Console.WriteLine($"PASS: managed 600s VIRTUAL timeline, drift {drift}ppm; played={playout.Stats.Played}, peak buffered={peakBuffered}, correction={playout.CorrectionPpm:F2}ppm (not measured E2E)");
         }
     }
-    public static void Run() { Packages(); VirtualClock(); }
+    public static void Run() { Packages(); InstallJournal(); VirtualClock(); }
 }

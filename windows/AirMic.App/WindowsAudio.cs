@@ -3,10 +3,9 @@ using AirMic.Core;
 
 namespace AirMic.App;
 
-internal sealed record AudioEndpoint(string Id, string Name, bool Capture)
+internal sealed record AudioEndpoint(string Id, string Name, bool Capture, bool IsAirMic)
 {
     public override string ToString() => Name;
-    public bool IsAirMic => Name.Contains("AirMic", StringComparison.OrdinalIgnoreCase);
 }
 
 internal static class WindowsAudio
@@ -29,8 +28,8 @@ internal static class WindowsAudio
                     Check(device.GetId(out string id)); Check(device.OpenPropertyStore(0, out properties));
                     var key = new PropertyKey { FormatId = new("a45c254e-df1c-4efd-8020-67d146a850e0"), PropertyId = 14 };
                     Check(properties.GetValue(ref key, out PropVariant name));
-                    try { result.Add(new(id, (name.Type == 31 ? Marshal.PtrToStringUni(name.Pointer) : null) ?? id, capture)); }
-                    finally { PropVariantClear(ref name); }
+                    try { result.Add(new(id, (name.Type == 31 ? Marshal.PtrToStringUni(name.Pointer) : null) ?? id, capture, AudioDeviceIdentity.IsAirMic(properties))); }
+                    finally { Clear(ref name); }
                 }
                 finally { Release(properties); Release(device); }
             }
@@ -40,6 +39,7 @@ internal static class WindowsAudio
     }
     public static void Check(int hr) { if (hr < 0) Marshal.ThrowExceptionForHR(hr); }
     public static void Release(object? value) { if (value is not null && Marshal.IsComObject(value)) Marshal.FinalReleaseComObject(value); }
+    public static void Clear(ref PropVariant value) => PropVariantClear(ref value);
     [DllImport("ole32.dll")] private static extern int PropVariantClear(ref PropVariant value);
 }
 
@@ -52,6 +52,7 @@ internal sealed class WasapiRenderer : IDisposable
 {
     private readonly string endpointId;
     private readonly PcmPlayout playout;
+    private readonly bool requireAirMic;
     private readonly ManualResetEvent stop = new(false);
     private readonly AutoResetEvent audioEvent = new(false);
     private readonly ManualResetEventSlim ready = new(false);
@@ -59,9 +60,10 @@ internal sealed class WasapiRenderer : IDisposable
     private string error = "";
     private long played, lost, plc, duplicates, late, underruns, buffered, target, bufferFrames, peak, resyncs, trimmed, holds, latencyUs;
     private int disposed;
-    public WasapiRenderer(string endpointId, AudioQueue queue, int minimum, int maximum, float volume)
+    public WasapiRenderer(string endpointId, AudioQueue queue, int minimum, int maximum, float volume, bool requireAirMic)
     {
-        this.endpointId = endpointId; playout = new(queue, minimum, maximum) { Volume = volume };
+        this.endpointId = endpointId; this.requireAirMic = requireAirMic;
+        playout = new(queue, minimum, maximum) { Volume = volume };
         thread = new Thread(RenderLoop) { IsBackground = true, Name = "AirMic WASAPI", Priority = ThreadPriority.Highest };
         thread.Start();
         if (!ready.Wait(TimeSpan.FromSeconds(10))) { Dispose(); throw new TimeoutException("WASAPI 초기화 시간 초과"); }
@@ -80,6 +82,16 @@ internal sealed class WasapiRenderer : IDisposable
             enumeratorObject = new MMDeviceEnumeratorObject();
             var enumerator = (IMMDeviceEnumerator)enumeratorObject;
             WindowsAudio.Check(enumerator.GetDevice(endpointId, out IMMDevice device)); deviceObject = device;
+            if (requireAirMic)
+            {
+                WindowsAudio.Check(device.OpenPropertyStore(0, out IPropertyStore properties));
+                try
+                {
+                    if (!AudioDeviceIdentity.IsAirMic(properties))
+                        throw new InvalidOperationException("Root\\AirMic 장치 신원을 확인하지 못했습니다. 장치를 새로고침하세요.");
+                }
+                finally { WindowsAudio.Release(properties); }
+            }
             Guid clientId = typeof(IAudioClient).GUID;
             WindowsAudio.Check(device.Activate(ref clientId, 23, IntPtr.Zero, out clientObject));
             client = (IAudioClient)clientObject;

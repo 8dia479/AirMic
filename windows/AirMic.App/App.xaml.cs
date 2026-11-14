@@ -9,6 +9,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
         string? mode = e.Args.FirstOrDefault(a => a is "--install" or "--uninstall" or "--install-driver");
+        if (mode == "--install-driver") mode = "--install"; // Legacy alias now uses the complete tracked installation.
         if (mode is not null)
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -22,14 +23,10 @@ public partial class App : Application
                     await child.WaitForExitAsync(); Shutdown(child.ExitCode); return;
                 }
                 if (mode == "--uninstall" && MessageBox.Show(
-                    "AirMic 앱과 전용 가상 오디오 장치를 제거할까요? 다른 오디오 장치는 건드리지 않고 사용자 설정은 보존합니다.",
+                    "AirMic 앱과 전용 가상 오디오 장치를 제거할까요? 다른 오디오 장치는 건드리지 않고 사용자 설정은 보존합니다. Discord/게임 등에서 장치를 사용 중이면 먼저 닫아주세요.",
                     "AirMic 제거", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 { Shutdown(2); return; }
-                Func<string> operation = mode switch {
-                    "--install" => AppDeployment.Install,
-                    "--uninstall" => AppDeployment.Uninstall,
-                    _ => DriverInstaller.InstallEmbedded,
-                };
+                Func<string> operation = mode == "--install" ? AppDeployment.Install : AppDeployment.Uninstall;
                 string result = await Task.Run(operation);
                 MessageBox.Show(result, "AirMic 설치 / 제거", MessageBoxButton.OK, MessageBoxImage.Information);
                 Shutdown(0);

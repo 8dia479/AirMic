@@ -66,6 +66,7 @@ public partial class MainWindow : Window
             UninstallButton.IsEnabled = AppDeployment.IsInstalled && !busy && receiver is null;
             if (!AppDeployment.CanInstall)
                 DriverStatus.Text += "\n이 개발 빌드에는 정식 서명된 driver/배포 고지 설치 bundle이 없습니다.";
+            if (AppDeployment.InstallationWarning is { Length: > 0 } warning) DriverStatus.Text += "\n" + warning;
         }
         catch (Exception e) { Notice.Text = "장치 조회 실패: " + e.Message; }
     }
@@ -115,7 +116,7 @@ public partial class MainWindow : Window
                 var queue = new AudioQueue(); WasapiRenderer? audio = null;
                 try
                 {
-                    if (endpoint is not null) audio = new(endpoint.Id, queue, minimum, maximum, volume);
+                    if (endpoint is not null) audio = new(endpoint.Id, queue, minimum, maximum, volume, endpoint.IsAirMic);
                     var network = new UdpReceiver(queue, IPAddress.Any, port, allowed, enqueueAudio: endpoint is not null);
                     return (network, audio);
                 }

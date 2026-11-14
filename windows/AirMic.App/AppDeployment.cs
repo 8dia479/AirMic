@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
@@ -8,7 +7,6 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
-using System.Text.Json;
 using AirMic.Setup;
 using Microsoft.Win32;
 
@@ -24,12 +22,11 @@ internal static class AppDeployment
     private const string FirewallName = "AirMic (Private LAN UDP)";
     public static string ProductRoot => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "AirMic");
     private static string ManifestPath => Path.Combine(ProductRoot, "installation.json");
+    private static string RemovalMarker => Path.Combine(ProductRoot, ".airmic-uninstall-pending");
     private static string ShortcutPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "AirMic.lnk");
     public static bool IsInstalled => File.Exists(ManifestPath);
     public static bool CanInstall => DriverInstaller.HasEmbeddedPackage && Assembly.GetExecutingAssembly().GetManifestResourceInfo(NoticesResource) is not null;
     public static bool IsAdministrator => new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
-    private sealed record VersionFiles(string Folder, string[] Files);
-    private sealed record Installation(int SchemaVersion, string Current, List<VersionFiles> Versions);
 
     internal static void EnsureProtectedDirectory(string directory)
     {
@@ -46,17 +43,52 @@ internal static class AppDeployment
             if (!item.Exists) item.Create();
         }
     }
-    private static bool VersionName(string? name) => name is not null && name.Length == 64 && name.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f');
-    private static Installation ReadInstallation()
+    internal static void EnsureNotReparseFile(string path)
     {
-        if (!File.Exists(ManifestPath)) return new(1, "", []);
+        if (File.Exists(path) && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException("reparse point 파일은 설치/제거하지 않습니다.");
+    }
+    private static AppInstallState ReadInstallation()
+    {
+        if (!File.Exists(ManifestPath)) return AppInstallState.Empty;
+        EnsureNotReparseFile(ManifestPath);
         if (new FileInfo(ManifestPath).Length > 65536) throw new InvalidDataException("설치 기록 크기 오류");
-        Installation saved = JsonSerializer.Deserialize<Installation>(File.ReadAllText(ManifestPath), new JsonSerializerOptions { MaxDepth = 8 })
-            ?? throw new InvalidDataException("설치 기록 오류");
-        if (saved.SchemaVersion != 1 || saved.Versions is null || saved.Versions.Count > 64
-            || saved.Versions.Any(v => v is null || !VersionName(v.Folder) || v.Files is null || v.Files.Length > 64 || v.Files.Any(f => !DriverPackage.SafeName(f))))
-            throw new InvalidDataException("안전하지 않은 설치 기록입니다. 자동 제거하지 않습니다.");
-        return saved;
+        return AppInstallState.Read(File.ReadAllBytes(ManifestPath));
+    }
+    private static void SaveInstallation(AppInstallState state)
+    {
+        byte[] data = state.Serialize();
+        string temporary = Path.Combine(ProductRoot, Guid.NewGuid().ToString("N") + ".tmp");
+        try
+        {
+            using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            { file.Write(data); file.Flush(flushToDisk: true); }
+            File.Move(temporary, ManifestPath, true);
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
+    public static string InstallationWarning
+    {
+        get
+        {
+            if (File.Exists(RemovalMarker)) return "이전 제거가 완료되지 않았거나 재부팅 대기 중입니다. 제거 실패라면 다시 제거하고, 완료됐다면 Windows를 재부팅하세요.";
+            if (!IsInstalled) return "";
+            try { return ReadInstallation().Pending == "" ? "" : "이전 설치가 완료되지 않았습니다. 설치 / 복구 또는 제거를 다시 실행하세요."; }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
+            { return "설치 기록을 확인할 수 없습니다: " + e.Message; }
+        }
+    }
+    private sealed class InstallationLock : IDisposable
+    {
+        private readonly Mutex mutex = new(false, @"Global\AirMic.Installation.v1");
+        public InstallationLock()
+        {
+            bool acquired;
+            try { acquired = mutex.WaitOne(0); }
+            catch (AbandonedMutexException) { acquired = true; } // Durable pending journal survives the crashed owner.
+            if (!acquired) { mutex.Dispose(); throw new IOException("다른 AirMic 설치/제거가 진행 중입니다."); }
+        }
+        public void Dispose() { mutex.ReleaseMutex(); mutex.Dispose(); }
     }
     private static Dictionary<string, byte[]> ReadNotices()
     {
@@ -78,32 +110,79 @@ internal static class AppDeployment
     public static string Install()
     {
         if (!IsAdministrator) throw new UnauthorizedAccessException("AirMic 설치에는 관리자 승인이 필요합니다.");
+        if (RuntimeInformation.OSArchitecture != Architecture.X64 || !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
+            throw new PlatformNotSupportedException("전용 driver는 Windows 10 (19041+) / 11 x64 전용입니다. ARM64는 지원하지 않습니다.");
         if (!CanInstall) throw new InvalidOperationException("서명된 driver/라이선스 bundle이 없는 진단 빌드는 설치 제품이 아닙니다.");
+        using var installationLock = new InstallationLock();
         string source = Environment.ProcessPath ?? throw new IOException("현재 실행 파일 경로 없음");
         if (!Path.GetFileName(source).Equals("AirMic.exe", StringComparison.OrdinalIgnoreCase)) throw new IOException("self-contained AirMic.exe로 설치하세요.");
+        // Both archives are validated before any privileged file/PnP mutations.
+        DriverPackage driverPackage = DriverInstaller.ReadEmbedded();
         Dictionary<string, byte[]> notices = ReadNotices();
         EnsureProtectedDirectory(ProductRoot);
-        Installation previous = ReadInstallation();
+        if (File.Exists(RemovalMarker)) throw new IOException("이전 제거가 완료되지 않았거나 재부팅 대기 중입니다. 제거를 완료하고 Windows 재부팅 후 설치하세요. 예약 삭제될 경로에 재설치하지 않습니다.");
+        AppInstallState previous = ReadInstallation();
         using var original = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
         string version = Convert.ToHexString(SHA256.HashData(original)).ToLowerInvariant();
+        AppInstallState prepared = previous.Prepare(version, ["AirMic.exe", .. notices.Keys]);
+        _ = prepared.Serialize(); // Enforce journal bounds BEFORE copying/installing anything.
         string directory = Path.Combine(ProductRoot, "Versions", version);
         EnsureProtectedDirectory(directory);
         string executable = Path.Combine(directory, "AirMic.exe");
-        if (!File.Exists(executable))
+        var createdFiles = new List<string>();
+        bool journalSaved = false;
+        string fallback = Path.Combine(ProductRoot, "Versions", prepared.Current, "AirMic.exe");
+        try
         {
-            original.Position = 0;
-            using var destination = new FileStream(executable, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-            original.CopyTo(destination);
+            EnsureNotReparseFile(executable);
+            if (!File.Exists(executable))
+            {
+                original.Position = 0;
+                using var destination = new FileStream(executable, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                createdFiles.Add(executable);
+                original.CopyTo(destination); destination.Flush(flushToDisk: true);
+            }
+            using (var copy = File.OpenRead(executable))
+                if (Convert.ToHexString(SHA256.HashData(copy)).ToLowerInvariant() != version) throw new InvalidDataException("설치 실행 파일 해시 불일치");
+            foreach (var file in notices)
+            {
+                string path = Path.Combine(directory, file.Key); EnsureNotReparseFile(path);
+                if (!File.Exists(path)) createdFiles.Add(path);
+                File.WriteAllBytes(path, file.Value);
+            }
+            // Record ALL candidate files first. Interrupted updates retain the old
+            // current app; first installs retain an explicit repair/uninstall path.
+            SaveInstallation(prepared); journalSaved = true;
+            _ = RegisterIntegration(fallback);
+            string driverResult = DriverInstaller.Install(driverPackage);
+            string firewall = RegisterIntegration(executable);
+            SaveInstallation(prepared.Complete(version)); // Final app-side commit only after PnP succeeds.
+            return $"AirMic 설치 처리 완료. 시작 메뉴에서 AirMic을 실행하세요.\n{driverResult}{firewall}";
         }
-        using (var copy = File.OpenRead(executable))
-            if (Convert.ToHexString(SHA256.HashData(copy)).ToLowerInvariant() != version) throw new InvalidDataException("설치 실행 파일 해시 불일치");
-        foreach (var file in notices) File.WriteAllBytes(Path.Combine(directory, file.Key), file.Value);
-        string driverResult = DriverInstaller.InstallEmbedded(); // PnP validates catalog/signature/coverage; never bypassed.
-        var versions = previous.Versions.Where(v => v.Folder != version).Append(new VersionFiles(version, ["AirMic.exe", .. notices.Keys])).ToList();
-        if (versions.Count > 64) throw new IOException("설치 버전이 너무 많습니다. 먼저 이전 설치를 제거하세요.");
-        string temporary = ManifestPath + ".tmp";
-        File.WriteAllText(temporary, JsonSerializer.Serialize(new Installation(1, version, versions)));
-        File.Move(temporary, ManifestPath, true);
+        catch (Exception error)
+        {
+            string recovery = "";
+            if (journalSaved)
+            {
+                // Do not silently downgrade a signed driver after a partial PnP
+                // update. Restore the previous APP integration, retain candidate
+                // files + pending state for explicit repair/uninstall instead.
+                try { _ = RegisterIntegration(fallback); }
+                catch (Exception integrationError) { recovery = "\n시작 메뉴/제거 등록 복구도 실패: " + integrationError.Message; }
+                recovery += "\n설치 기록과 복구용 EXE를 보존했습니다. 설치 / 복구 또는 제거를 다시 실행하세요."
+                    + "\nDriver 변경은 자동 downgrade하지 않았습니다. Windows 재부팅이 필요할 수 있습니다.";
+            }
+            else
+            {
+                foreach (string path in createdFiles)
+                    try { File.Delete(path); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+                try { Directory.Delete(directory); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+            throw new InvalidOperationException(error.Message + recovery, error);
+        }
+    }
+    private static string RegisterIntegration(string executable)
+    {
         CreateShortcut(executable);
         using (RegistryKey key = Registry.LocalMachine.CreateSubKey(RegistryPath, writable: true))
         {
@@ -112,23 +191,25 @@ internal static class AppDeployment
             key.SetValue("DisplayIcon", executable); key.SetValue("UninstallString", $"\"{executable}\" --uninstall");
             key.SetValue("NoModify", 1, RegistryValueKind.DWord); key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
         }
-        string firewall = "";
-        try { SetFirewall(executable); }
-        catch (COMException e) { firewall = "\nPrivate LAN 방화벽 자동 설정 실패: " + e.Message + " · Windows 방화벽에서 이 EXE를 허용하세요."; }
-        return $"AirMic 설치 처리 완료. 시작 메뉴에서 AirMic을 실행하세요.\n{driverResult}{firewall}";
+        try { SetFirewall(executable); return ""; }
+        catch (COMException e) { return "\nPrivate LAN 방화벽 자동 설정 실패: " + e.Message + " · Windows 방화벽에서 이 EXE를 허용하세요."; }
     }
     public static string Uninstall()
     {
         if (!IsAdministrator) throw new UnauthorizedAccessException("AirMic 제거에는 관리자 승인이 필요합니다.");
         if (!IsInstalled) throw new InvalidOperationException("설치된 AirMic 기록이 없습니다.");
+        using var installationLock = new InstallationLock();
         EnsureProtectedDirectory(ProductRoot);
-        Installation saved = ReadInstallation(); // Refuse unsafe paths BEFORE any device/file removal.
+        if (!IsInstalled) throw new InvalidOperationException("설치 기록이 이미 제거되었습니다. 재부팅 대기 중인지 확인하세요.");
+        AppInstallState saved = ReadInstallation(); // Refuse unsafe paths BEFORE any device/file removal.
+        EnsureNotReparseFile(RemovalMarker);
+        File.WriteAllText(RemovalMarker, "Uninstall started; do not reinstall into paths pending reboot deletion.");
         string driver = DriverInstaller.UninstallAirMicDevices();
         try { SetFirewall(null); } catch (COMException) { /* Disabled firewall service: stale rule cannot run the deleted program. */ }
         if (File.Exists(ShortcutPath)) File.Delete(ShortcutPath);
         Registry.LocalMachine.DeleteSubKeyTree(RegistryPath, throwOnMissingSubKey: false);
         bool pending = false;
-        foreach (VersionFiles version in saved.Versions)
+        foreach (InstalledVersion version in saved.Versions)
         {
             string directory = Path.Combine(ProductRoot, "Versions", version.Folder);
             if (!Directory.Exists(directory)) continue;
@@ -147,13 +228,21 @@ internal static class AppDeployment
                 EnsureProtectedDirectory(stage);
                 if (Directory.EnumerateDirectories(stage).Any()) continue;
                 foreach (string file in Directory.EnumerateFiles(stage))
-                    if (DriverPackage.SafeName(Path.GetFileName(file))) DeleteOrSchedule(file, ref pending);
+                    if (DriverPackage.SafeName(Path.GetFileName(file)) || Path.GetFileName(file) == DriverInstaller.PackageRecordName)
+                        DeleteOrSchedule(file, ref pending);
                 DeleteDirectoryIfEmpty(stage, ref pending);
             }
             DeleteDirectoryIfEmpty(packages, ref pending);
         }
         DeleteOrSchedule(ManifestPath, ref pending);
         DeleteDirectoryIfEmpty(Path.Combine(ProductRoot, "Versions"), ref pending);
+        if (pending)
+        {
+            // A running EXE can only be removed after reboot. Reinstalling the
+            // same hash/path now would otherwise delete the NEW install at boot.
+            if (!MoveFileEx(RemovalMarker, null, 4)) throw new Win32Exception();
+        }
+        else File.Delete(RemovalMarker);
         DeleteDirectoryIfEmpty(ProductRoot, ref pending);
         return driver + "\nAirMic 시작 메뉴/프로그램 등록을 제거했습니다. 사용자 설정은 보존합니다."
             + (pending ? "\n실행 중인 파일은 Windows 재부팅 시 정리됩니다. 재부팅은 자동 수행하지 않습니다." : "");
