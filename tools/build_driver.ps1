@@ -17,9 +17,12 @@ try {
     $env:PATH = ($toolDirectories -join ';') + ';' + $env:PATH
     Write-Host "Using WDK stamp tool: $($stampInf.FullName)"
     $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-    $msbuild = & $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
-    if (-not $msbuild) { throw 'Native driver builds need a WDK-compatible Visual Studio C++ toolchain. App builds need only .NET.' }
-    & $msbuild driver/AirMic/AirMic.vcxproj /m /v:minimal /p:Configuration=$Configuration /p:Platform=x64 /p:SignMode=Off
+    # WDK.x64 NuGet provides x64 in-process InfVerif/ApiValidator. Running the
+    # x86 MSBuild host makes its native tasks look for missing x86 DLLs/tools.
+    $msbuild = & $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\amd64\MSBuild.exe' | Select-Object -First 1
+    if (-not $msbuild) { throw 'Native driver builds need x64 MSBuild and a WDK-compatible Visual Studio C++ toolchain. App builds need only .NET.' }
+    Write-Host "Using x64 MSBuild host: $msbuild"
+    & $msbuild driver/AirMic/AirMic.vcxproj /m /v:minimal /p:Configuration=$Configuration /p:Platform=x64 /p:PreferredToolArchitecture=x64 /p:SignMode=Off
     if ($LASTEXITCODE -ne 0) { throw "Driver compile failed: $LASTEXITCODE" }
     $output = Join-Path $root 'build/driver/unsigned'
     New-Item -ItemType Directory -Force $output | Out-Null
