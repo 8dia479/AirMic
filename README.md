@@ -93,3 +93,8 @@ PC와 같은 LAN에 연결해 GUI에 표시된 PC IPv4와 같은 포트를 입�
 
 [빌드·실행 안내](docs/BUILD.md) · [프로토콜](docs/PROTOCOL.md) ·
 [지연 측정](docs/LATENCY.md) · [driver 수용 시험 계획](docs/WINDOWS_DRIVER_VALIDATION.md) · [서드파티 고지](THIRD_PARTY_NOTICES.md)
+
+
+## 빠른 Windows 마이크 사용
+
+정식 AirMic 가상 드라이버가 준비되기 전에는 선택적으로 [VB-CABLE](https://vb-audio.com/Cable/)을 설치할 수 있습니다. AirMic 출력에서 **CABLE Input**을 선택하고 Discord/게임의 입력 장치에서 **CABLE Output**을 선택하세요. 상세 연결 절차와 주의사항은 [Windows 빌드·실행 안내](docs/BUILD.md#빠른-마이크-연결--vb-cable-임시-경로)를 참조하세요.
