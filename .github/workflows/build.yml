@@ -113,7 +113,7 @@ jobs:
         working-directory: android
         run: |
           set +e
-          ./gradlew :app:testDebugUnitTest :dsp-host-tests:test :app:assembleDebug :app:lintDebug --no-daemon --stacktrace > ../android-build.log 2>&1
+          ./gradlew :app:testDebugUnitTest :dsp-host-tests:test :app:assembleDebug :app:lintDebug --continue --no-daemon --stacktrace > ../android-build.log 2>&1
           result=$?
           set -e
           cat ../android-build.log
