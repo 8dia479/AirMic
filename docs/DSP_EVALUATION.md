@@ -1,5 +1,8 @@
-> 이 검토는 0.1 native 경로 기준입니다. 0.2 C#/순수 Kotlin 앱에는 두 라이브러리를
-> 통합하지 않았으며 binding/패키징은 별도 재검토 대상입니다. [전환 상태](MIGRATION_0_2.md).
+> **역사적 외부 후보 검토(0.1 native 경로 기준)**입니다. 아래의 ‘기본 gate’와 native 빌드 설명은
+> 검토 당시 상태입니다. 현재 0.2 앱은 [순수 Kotlin HPF→NS→EQ→Compressor→Limiter](DSP_PIPELINE.md)를
+> 자체 구현했고, [De-reverb는 별도 설계만](DE_REVERB_DESIGN.md) 있습니다. WebRTC/RNNoise의
+> 후보 우선순위는 유지하지만 두 라이브러리는 통합하지 않았으며, 순수 Kotlin 범위와 충돌하는
+> native binding/패키징은 별도 범위 결정 전 도입하지 않습니다. [전환 상태](MIGRATION_0_2.md).
 
 # 음성 처리 라이브러리 검토 및 선택 결정
 
@@ -22,12 +25,12 @@
 판단 기준은 현재 경로와의 호환성, callback 비차단, 런타임 변경, 의존성의 출처와
 재현성, 배포 조건이다. 성능·품질은 실제 측정 자료가 없으므로 선정 근거로 수치화하지 않았다.
 
-현재 코드의 경계:
+검토 당시(0.1 native) 코드의 경계:
 
 - Android `CaptureAssembler` → SPSC → **sender worker의 `DspProcessor`** → PCM16/UDP.
   입력은 48 kHz mono, **480개의 정규화 float/10 ms**이다. Windows에 같은 NS를 다시
   적용할 필요는 없다. 추가 DSP 때문에 PCM16 BE wire format을 바꿀 이유도 없다.
-- 현재 HPF → 선택적 기본 gate → EQ → compressor → limiter는 자체 구현이다.
+- 검토 당시 HPF → 선택적 기본 gate → EQ → compressor → limiter는 자체 구현이었다.
   API 선언만 추가한 가짜 backend, WebRTC/RNNoise build option·UI·가중치는 없다.
 - Unprocessed 입력을 우선 요청하지만 VoiceRecognition fallback이 있어 실제 raw 입력이나
   기기 DSP의 비활성화를 보장할 수 없다. 실제 열린 preset/효과를 기록해 중복 처리를 비교해야 한다.

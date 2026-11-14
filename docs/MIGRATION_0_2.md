@@ -72,7 +72,10 @@ CI에서 실행하거나 대상 Windows에서 설치·제거한 것은 아닙니
 이 Linux 작업 공간에는 dotnet/JDK/Android SDK/Windows/WDK가 없어 대상 빌드는
 GitHub Actions에서 수행했습니다. C++ history host tests는 이 환경에서도 직접 실행했습니다.
 
-현재 기록된 검증 source: `a025aa8ae60a890e51520936ea8538f9646f4c35`
+아래 표는 **driver/setup 전환 시점**의 검증입니다. 후속 5단 DSP 구현·검증은
+[DSP 보고서](DSP_PIPELINE.md) 및 `test-results/2026-11-14-dsp-pipeline-ci.json`을 참조하세요.
+
+driver/setup 전환 검증 source: `a025aa8ae60a890e51520936ea8538f9646f4c35`
 실행: <https://github.com/8dia479/AirMic/actions/runs/43592745698> — **7개 job 전체 성공**.
 이후 변경은 해당 commit의 검증으로 대신하지 않으며 최종 검증 source/기록은 아래 결과 JSON에 남깁니다.
 
@@ -107,7 +110,9 @@ GitHub Actions에서 수행했습니다. C++ history host tests는 이 환경에
 수신/render/UI와 capture/DSP/network를 분리합니다. 오디오 처리에 파일/네트워크/사용자 mutex를
 넣지 않습니다. 처리 저장소는 사전 할당하지만 CLR/ART의 GC/JIT/COM/드라이버 내부까지
 hard-RT 또는 무할당이라고 주장하지 않습니다. **30–50 ms는 계속 미검증 목표**입니다.
-기본 gate는 고급 NS가 아닙니다. WebRTC/RNNoise는 후보 검토만 유지하고 통합하지 않았습니다.
+후속 변경에서 기존 gate를 제거하고 **HPF → 자체 spectral NS → EQ → Compressor → Limiter**를
+구현했습니다. [DSP 구현·지연·시험](DSP_PIPELINE.md), [별도 De-reverb 설계(미구현)](DE_REVERB_DESIGN.md).
+WebRTC/RNNoise는 후보 검토만 유지하고 통합하지 않았습니다.
 
 과거 0.1 보고서는 [IMPLEMENTATION_REPORT.md](IMPLEMENTATION_REPORT.md),
 현재 빌드는 [BUILD.md](BUILD.md), protocol은 [PROTOCOL.md](PROTOCOL.md)를 참조하세요.

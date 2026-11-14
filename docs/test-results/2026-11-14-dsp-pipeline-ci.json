@@ -1,0 +1,229 @@
+{
+  "observedAtUtc": "2026-11-14T12:33:41.204771+00:00",
+  "validatedSourceCommit": "733df700ccf28ad03da4c37c58088d9a30aa74b1",
+  "requirements": {
+    "realTimeVoiceDsp": "IMPLEMENTED_AND_HOST_CI_TESTED; physical Android acceptance not performed",
+    "processingOrder": [
+      "High-pass Filter",
+      "Noise Suppression",
+      "EQ",
+      "Compressor",
+      "Limiter"
+    ],
+    "deReverb": "SEPARATE_DESIGN_ONLY; no implementation/backend/UI toggle",
+    "deReverbDesignPath": "docs/DE_REVERB_DESIGN.md",
+    "languageAndDependencies": "Pure Kotlin AudioRecord DSP; no JNI/NDK/WebRTC/RNNoise/model added; C# Windows scope unchanged"
+  },
+  "run": {
+    "conclusion": "success",
+    "createdAt": "2026-11-14T12:29:38Z",
+    "databaseId": 43595090569,
+    "headSha": "733df700ccf28ad03da4c37c58088d9a30aa74b1",
+    "status": "completed",
+    "updatedAt": "2026-11-14T12:31:48Z",
+    "url": "https://github.com/8dia479/AirMic/actions/runs/43595090569"
+  },
+  "jobs": [
+    {
+      "name": "windows-gui",
+      "databaseId": 132447786836,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T12:29:41Z",
+      "completedAt": "2026-11-14T12:30:18Z"
+    },
+    {
+      "name": "android",
+      "databaseId": 132447786962,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T12:29:41Z",
+      "completedAt": "2026-11-14T12:30:18Z"
+    },
+    {
+      "name": "managed-core (ubuntu-latest)",
+      "databaseId": 132447787027,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T12:29:41Z",
+      "completedAt": "2026-11-14T12:30:18Z"
+    },
+    {
+      "name": "driver-compile",
+      "databaseId": 132447787052,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T12:29:41Z",
+      "completedAt": "2026-11-14T12:30:18Z"
+    },
+    {
+      "name": "driver-history",
+      "databaseId": 132447787057,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T12:29:41Z",
+      "completedAt": "2026-11-14T12:30:18Z"
+    },
+    {
+      "name": "managed-core (windows-latest)",
+      "databaseId": 132447787089,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T12:29:41Z",
+      "completedAt": "2026-11-14T12:30:18Z"
+    },
+    {
+      "name": "legacy-reference",
+      "databaseId": 132447787094,
+      "conclusion": "success",
+      "startedAt": "2026-11-14T12:29:41Z",
+      "completedAt": "2026-11-14T12:30:18Z"
+    }
+  ],
+  "testCounts": {
+    "combined": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "androidAppTests": 17,
+    "hostOnlyTests": 1
+  },
+  "dspFormat": {
+    "rateHz": 48000,
+    "channels": 1,
+    "samplesPerHop": 480,
+    "windowSamples": 960,
+    "fftSize": 1024,
+    "fixedAlignmentLatencySamples": 480,
+    "nominalAlignmentMs": 10,
+    "latencyAppliesTo": "NS ON/OFF and global DSP bypass; final safety limiter remains active"
+  },
+  "dspMetricsFromCi": [
+    {
+      "hpf_20hz_db": -24.099479492254872,
+      "hpf_1000hz_db": -0.0001768440715260538,
+      "cutoff_hz": 80
+    },
+    {
+      "identity_delay_samples": 480,
+      "sample_rate": 48000
+    },
+    {
+      "synthetic_noise_reduction_db": 8.2711799865067,
+      "input_snr_db": 16.281134000859964,
+      "output_snr_db": 22.136881185874064,
+      "active_signal_gain": 0.9407596161381245
+    },
+    {
+      "raised_noise_floor_reduction_db": 11.781542324031118
+    },
+    {
+      "startup_coherent_signal_gain": 0.8670123929801015
+    },
+    {
+      "warmed_allocated_bytes": 0,
+      "frames": 2000,
+      "batch": 0,
+      "includes_configure": true,
+      "host_ms_per_frame": 0.115161882
+    },
+    {
+      "warmed_allocated_bytes": 0,
+      "frames": 2000,
+      "batch": 1,
+      "includes_configure": true,
+      "host_ms_per_frame": 0.1062644355
+    },
+    {
+      "warmed_allocated_bytes": 0,
+      "frames": 2000,
+      "batch": 2,
+      "includes_configure": true,
+      "host_ms_per_frame": 0.1029934215
+    }
+  ],
+  "metricScope": "Seeded synthetic fixtures and warmed HotSpot JVM production core. Neither human-speech corpus quality nor phone processing time nor E2E latency.",
+  "checkAnnotations": {
+    "android": [
+      {
+        "title": "Kotlin tests",
+        "message": "{'tests': 18, 'failures': 0, 'errors': 0, 'skipped': 0}; APK and lint completed; AudioRecord hardware not tested",
+        "annotation_level": "notice"
+      },
+      {
+        "title": "Kotlin DSP measurements",
+        "message": "DSP_METRIC hpf_20hz_db=-24.099479492254872 hpf_1000hz_db=-1.768440715260538E-4 cutoff_hz=80\nDSP_METRIC identity_delay_samples=480 sample_rate=48000; OFF and unity-WOLA fixtures, not E2E\nDSP_METRIC synthetic_noise_reduction_db=8.2711799865067 input_snr_db=16.281134000859964 output_snr_db=22.136881185874064 active_signal_gain=0.9407596161381245; seeded stationary noise + three-tone proxy, NOT speech corpus/device quality\nDSP_METRIC raised_noise_floor_reduction_db=11.781542324031118; synthetic stationary-noise fixture\nDSP_METRIC startup_coherent_signal_gain=0.8670123929801015; three-tone proxy at first frame, NOT arbitrary speech preservation\nDSP_METRIC warmed_allocated_bytes=0 frames=2000 batch=0 includes_configure=true host_ms_per_frame=0.115161882; HotSpot JVM core only, NOT ART/AudioRecord/network or phone timing\nDSP_METRIC warmed_allocated_bytes=0 frames=2000 batch=1 includes_configure=true host_ms_per_frame=0.1062644355; HotSpot JVM core only, NOT ART/AudioRecord/network or phone timing\nDSP_METRIC warmed_allocated_bytes=0 frames=2000 batch=2 includes_configure=true host_ms_per_frame=0.1029934215; HotSpot JVM core only, NOT ART/AudioRecord/network or phone timing",
+        "annotation_level": "notice"
+      }
+    ],
+    "managed-core (ubuntu-latest)": [
+      {
+        "title": "Managed core result",
+        "message": "Managed core allocation guard: 0 bytes / 2000 cycles (not WASAPI/CLR-wide)\nPASS: driver package validation (synthetic ZIP fixtures only; NOT driver signing or installation)\nPASS: install journal / interrupted upgrade recovery (portable state tests, NOT Windows install/uninstall)\nPASS: managed 600s VIRTUAL timeline, drift -200ppm; played=59987, peak buffered=2, correction=-151.52ppm (not measured E2E)\nPASS: managed 600s VIRTUAL timeline, drift 0ppm; played=59999, peak buffered=2, correction=-0.00ppm (not measured E2E)\nPASS: managed 600s VIRTUAL timeline, drift 200ppm; played=60010, peak buffered=3, correction=151.52ppm (not measured E2E)\nPASS: 116,436 managed checks",
+        "annotation_level": "notice"
+      }
+    ],
+    "driver-compile": [
+      {
+        "title": "UNSIGNED WDK build",
+        "message": "SYS/INF/CAT generated; Win10 19041 + Win11 catalog validation passed. NO signing, installation or device test.\nAirMic.sys: 61440 bytes; SHA256=06697A5EAB8BC83196E5D4764CCBD864461E44C92290C7145AC3F29F6B4C2817\nAirMic.inf: 4373 bytes; SHA256=978E02769BE43E07B24469AEFC4DB795E26F2AD5566654120E2C7E7005CD1B10\nAirMic.cat: 1115 bytes; SHA256=9B16C18556C68D7AB2AF91AC89FBD28DE1D319A84C8A01C0BFF43EC22AEB91FB",
+        "annotation_level": "notice"
+      }
+    ],
+    "managed-core (windows-latest)": [
+      {
+        "title": "Managed core result",
+        "message": "Managed core allocation guard: 0 bytes / 2000 cycles (not WASAPI/CLR-wide)\nPASS: driver package validation (synthetic ZIP fixtures only; NOT driver signing or installation)\nPASS: install journal / interrupted upgrade recovery (portable state tests, NOT Windows install/uninstall)\nPASS: managed 600s VIRTUAL timeline, drift -200ppm; played=59987, peak buffered=2, correction=-151.52ppm (not measured E2E)\nPASS: managed 600s VIRTUAL timeline, drift 0ppm; played=59999, peak buffered=2, correction=-0.00ppm (not measured E2E)\nPASS: managed 600s VIRTUAL timeline, drift 200ppm; played=60010, peak buffered=3, correction=151.52ppm (not measured E2E)\nPASS: 116,436 managed checks",
+        "annotation_level": "notice"
+      }
+    ]
+  },
+  "failedIterationsAndCorrections": [
+    {
+      "conclusion": "failure",
+      "databaseId": 43594172142,
+      "headSha": "ff9a083b5924dabac59c5734a262855ec6343b7a",
+      "status": "completed",
+      "url": "https://github.com/8dia479/AirMic/actions/runs/43594172142",
+      "observedProblemAndCorrection": "Android unit-test compilation rejected java.lang.management/com.sun.management on the Android API classpath. Moved host-only allocation instrumentation to a Kotlin JVM test module compiling the exact production sources."
+    },
+    {
+      "conclusion": "failure",
+      "databaseId": 43594466020,
+      "headSha": "57a955926139c6453d6222aa03d500ccaaf7fa5f",
+      "status": "completed",
+      "url": "https://github.com/8dia479/AirMic/actions/runs/43594466020",
+      "observedProblemAndCorrection": "Single first-use JVM allocation probe reported 744 bytes. Warmed the MXBean probe and identical batch method, then required zero bytes in ALL three measured 2000-frame windows. This does not make first-use initialization or ART allocation-free."
+    },
+    {
+      "conclusion": "failure",
+      "databaseId": 43594788307,
+      "headSha": "9c6aa0a54b6a6b5daeae3af62071553394a106c0",
+      "status": "completed",
+      "url": "https://github.com/8dia479/AirMic/actions/runs/43594788307",
+      "observedProblemAndCorrection": "Quantitative NS fixtures found only 2.47 dB stationary-noise reduction and 3.01 dB after a floor increase. Fixed downward PSD update bias and used Wiener amplitude gain rather than its square root. Kept the acceptance thresholds unchanged and added startup/live-toggle cases."
+    }
+  ],
+  "validatedSourceFileSha256": {
+    "android/app/src/main/java/io/airmic/AudioEngine.kt": "16a388321b6a9e7b5b025eb9e4eff3b65fd652d36324a9c153fb41e831c1d896",
+    "android/app/src/main/java/io/airmic/AudioProtocol.kt": "68bab489901907067fc5d0e5e16a5a2475fabcc5b444578139b26d96a689315f",
+    "android/app/src/main/java/io/airmic/DspProcessor.kt": "0d6c611b73c1c54d61fa7160af4eea04413d88b8693708b9d3df57b1a7597c20",
+    "android/app/src/main/java/io/airmic/DspStages.kt": "b8f240d7110bfb6054883983830bb52ec85ef584d8a9928e0378ec35daf5a9ed",
+    "android/app/src/main/java/io/airmic/DspPreferences.kt": "8103dc9b3cd8738c080d0c73bfbd29b2bad134494b073b915aee2b4b0a867733",
+    "android/app/src/main/java/io/airmic/NoiseSuppressor.kt": "dd28a01ec9c301cdb6116fbdc04ee785e45a0a62fd75b9accb9c2df0973d98a8",
+    "android/app/src/main/java/io/airmic/Radix2Fft.kt": "a2449c8e0577193eab66f4d77d6e66bb274b458ff71176122b93f2c25c39423f",
+    "android/app/src/main/java/io/airmic/MainActivity.kt": "ef56489cfde23eb3e09630c83035358008b35a5f94934adc708f1ede707178ff",
+    "android/app/src/main/java/io/airmic/MicrophoneService.kt": "de83b6d7f7b6e089ed95a8e74ffb824f28e4a377178dd31e2625c1a06467e019",
+    "android/app/src/test/java/io/airmic/AudioCoreTest.kt": "d6284f36e7e6620a5b2135267a0e2baece30b7e3638953597dc24e1e3ca98027",
+    "android/app/src/test/java/io/airmic/DspPipelineTest.kt": "0406d12230148703f2f987b5426547ffe225d7cde5fcd457a8b9063aef54c284",
+    "android/dsp-host-tests/build.gradle.kts": "0cc1bc82be378a4fa84a0dae2d70b6435c9553601143359584e65ed48dfba6df",
+    "android/dsp-host-tests/src/test/kotlin/io/airmic/DspAllocationTest.kt": "6cfa59dc232a7df211a5a296dc48c49551bf70cf787e8abb20fc496003206052",
+    ".github/workflows/build.yml": "1a34d0d7d3b8c732fb17238b0872a98da5ef30e24fbdbe599bfd67d02b9c3b65"
+  },
+  "evidenceMethod": "Observed gh run view / GitHub check-run annotations. Production/test hashes are local git blobs at the validated commit. CI APK/report artifacts not independently downloaded or rehashed.",
+  "limits": [
+    "No local JDK/Android SDK or Windows/WDK. Target builds/tests ran on GitHub-hosted JDK 17 + Android SDK / Windows runners.",
+    "No Z Flip6 AudioRecord execution, real speech-corpus listening/intelligibility evaluation, ART-wide allocation/GC, thermal/battery or physical 600s soak.",
+    "10ms is nominal WOLA alignment, not measured CPU or E2E delay. 30-50ms E2E goal remains unverified.",
+    "Zero allocated bytes refers to all three warmed HotSpot DSP/configure batches only, not construction, cold calls, ART/framework, capture or networking.",
+    "Stationary-noise suppressor is not a gate, speech classifier, other-speaker remover, AEC, AGC or de-reverberation implementation. Tonal and nonstationary noise may remain.",
+    "De-reverb is a separate feature design only; online WPE is an unimplemented research candidate, with no achieved performance/quality claims.",
+    "Unsigned WDK and diagnostic EXE regression success does not resolve Microsoft signing, elevated installation, real driver/audio routing or consumer-app acceptance."
+  ]
+}

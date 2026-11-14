@@ -42,8 +42,13 @@ endpoint/port라는 out-of-band 전제가 있습니다. 아래 optional ACK는 �
 - 단위는 **1/48,000초인 sample tick**. 각 frame의 첫 sample을 식별하는 타임라인.
 - 송신 시작 때 source monotonic clock에서 임의 base를 정한 후 480씩 증가합니다.
 - 기준 clock epoch를 Windows와 공유하지 않으며 UTC/Unix milliseconds가 아닙니다.
-- base는 Oboe start 부근의 단조 시각이지, ADC hardware timestamp 정밀도나 실제
-  첫 sample 물리 포착 시각을 보장하는 값은 아닙니다.
+- 현재 Kotlin 앱의 base는 AudioRecord capture 시작 부근의 단조 시각입니다.
+  ADC hardware timestamp 정밀도나 실제 첫 sample 물리 포착 시각을 보장하지 않습니다.
+- 현행 DSP는 고정 **480-sample / 10 ms** WOLA 정렬 지연을 갖습니다. sender는
+  capture timestamp에서 이 값을 뺀 값을 payload의 source timeline으로 사용합니다.
+  NS/전체 DSP ON·OFF에도 같은 offset을 유지해 인접 packet의 관계를 바꾸지 않습니다.
+  startup/gap reset의 첫 hop은 무음, 종료 시 마지막 buffered hop은 폐기합니다.
+  [DSP 지연·불연속 계약](DSP_PIPELINE.md)을 참조하세요.
 - source timestamp와 Windows clock을 빼서 one-way/E2E latency라고 계산하면 안 됩니다.
 - 정상 세션은 다음 관계를 만족합니다:
 
@@ -104,7 +109,7 @@ Python 대응 형식은 `!4sIQIHH`.
 Android는 선택한 PC IP/port에 connected UDP socket을 사용하고, 최근 1,024개
 성공 송신 record의 sequence와 timestamp를 모두 대조합니다. 5초 넘은 RTT sample은
 버립니다. 이 RTT는 UDP send→receiver validate/ACK→sender receive 시간이며,
-오디오 capture/jitter/WASAPI/VB-CABLE/게임 입력 지연을 재는 것이 아닙니다.
+오디오 capture/DSP/jitter/WASAPI/AirMic driver/게임 입력 지연을 재는 것이 아닙니다.
 UI는 RTT를 7/8 이전 + 1/8 현재 sample로 평활합니다. 2초 ACK timeout은 오디오
 중단의 확정 증거가 아니라 **PC 응답 미확인**입니다. 역방향 방화벽/혼잡으로도 발생합니다.
 

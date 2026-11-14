@@ -30,6 +30,7 @@ windows/AirMic.sln       C# solution — Visual Studio에서 열기
 android/                Android Studio에서 열기
   app/src/main/         Kotlin UI / FGS / AudioRecord / DSP / UDP
   app/src/test/         Kotlin wire / DSP / SPSC 테스트
+  dsp-host-tests/       동일 production DSP의 JVM-only 할당 계측 (APK 의존성 아님)
 driver/                 전용 native WaveRT driver 예외 (WDK/서명/장치 검증은 별도)
 shared/, tests/         0.1 C++ reference 회귀·Python 진단 (앱 빌드에는 사용하지 않음)
 docs/                   현재 빌드 안내, 전환 보고서, 프로토콜 및 과거 결과
@@ -63,7 +64,7 @@ Build Tools 35.0.0이 필요합니다. **NDK / CMake 설치는 더 이상 필요
 
 ```powershell
 cd android
-.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+.\gradlew.bat :app:testDebugUnitTest :dsp-host-tests:test :app:assembleDebug :app:lintDebug
 ```
 
 APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
@@ -83,8 +84,11 @@ PC와 같은 LAN에 연결해 GUI에 표시된 PC IPv4와 같은 포트를 입�
 - `AudioRecord`의 실제 형식/버퍼·기기 DSP, .NET GC/COM, WASAPI, 드라이버,
   실제 Wi-Fi·화면 off·발열·배터리·600초 안정성과 E2E 지연은 대상 기기 검증이 필요합니다.
 - **30–50 ms는 계속 미검증 목표**입니다. ACK는 수신 확인일 뿐 마이크 출력/인증/오디오 지연 측정이 아닙니다.
-- Android HPF → 선택적 기본 gate → EQ → compressor → limiter는 Kotlin으로 옮겼습니다.
-  **WebRTC/RNNoise 통합·de-reverb·AEC는 없습니다.** [기존 후보 검토](docs/DSP_EVALUATION.md).
+- Android **HPF → Noise Suppression → EQ → Compressor → Limiter**를 순수 Kotlin으로 구현했습니다.
+  기존 gate 대신 주파수별 adaptive-noise PSD / Wiener WOLA 억제를 사용합니다. runtime 설정을 지원하며
+  NS/전체 bypass에서도 **10 ms 정렬 지연과 최종 safety limiter**를 유지합니다. [구현·검증 범위](docs/DSP_PIPELINE.md).
+- **De-reverb는 [별도 기능 설계](docs/DE_REVERB_DESIGN.md)만 완료했으며 미구현**입니다.
+  WebRTC/RNNoise/AEC는 통합하지 않았습니다. [기존 외부 후보 검토](docs/DSP_EVALUATION.md).
 - v1은 암호화/인증이 없는 신뢰 LAN 전용입니다. 공용 Wi-Fi·인터넷·포트 포워딩에 노출하지 마세요.
 
 [빌드·실행 안내](docs/BUILD.md) · [프로토콜](docs/PROTOCOL.md) ·

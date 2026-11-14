@@ -102,12 +102,14 @@ CLI를 쓸 때는 IDE의 Gradle JDK와 별개로 JAVA_HOME도 JDK 17인지 확�
 
 ```powershell
 cd android
-.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --stacktrace
+.\gradlew.bat :app:testDebugUnitTest :dsp-host-tests:test :app:assembleDebug :app:lintDebug --stacktrace
 ```
 
 APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
 Linux/macOS에서는 같은 위치에서 `./gradlew`를 사용합니다. SDK 경로 자동 감지가 안 되면
 ignored `android/local.properties`에 `sdk.dir`를 지정합니다. NDK/JNI/ABI별 `.so`는 없습니다.
+`dsp-host-tests`는 동일 production DSP의 JVM-only 메모리 계측 모듈이며 APK에 포함되지 않습니다.
+실제 [5단 DSP 구현](DSP_PIPELINE.md)과 [미구현 De-reverb의 별도 설계](DE_REVERB_DESIGN.md)를 구분합니다.
 
 ## 4. 실제 연결과 ‘마이크’ 상태
 
@@ -156,7 +158,8 @@ CI에서 실제 compile과 unsigned catalog 생성/검증을 통과했지만 장
 ## 6. 테스트의 구분
 
 - `dotnet run --project windows/AirMic.Tests -c Release`: 새 managed core, 합성 ZIP 검사, portable 설치 journal, 600초 가상 drift timelines. 실제 설치/600초 기기 soak 아님.
-- `:app:testDebugUnitTest`: 새 Kotlin wire/DSP/SPSC. 실제 AudioRecord는 검증하지 않음.
+- `:app:testDebugUnitTest`: Kotlin wire/SPSC 및 FFT·NS·HPF/EQ/compressor/limiter·pipeline 순서/상태/타임라인. 실제 AudioRecord/음성 corpus 품질은 검증하지 않음.
+- `:dsp-host-tests:test`: 같은 production Kotlin 파일의 warmed JVM process/configure 할당 계측. Android API에 없는 HotSpot 관리 API는 이 host-only 모듈에만 두며 ART/AudioRecord 전체 무할당의 증거가 아님.
 - WPF `--smoke-ui`: 창을 생성·닫는 테스트. 오디오/driver 검증은 아님.
 - root CMake와 기존 Python 테스트: 0.1 reference/진단 도구. 새 앱의 통과 결과로 대체하지 않음.
-- [전환 보고서](MIGRATION_0_2.md) 및 CI 로그에 실제 수행/미수행 범위를 구분합니다.
+- [전환 보고서](MIGRATION_0_2.md), [현재 DSP 검증](DSP_PIPELINE.md) 및 CI 로그에 실제 수행/미수행 범위를 구분합니다.
