@@ -65,7 +65,7 @@ Return Value:
     
         if (m_bUnregisterStream)
         {
-            if (!m_bCapture) m_pMiniport->GetAdapterCommObj()->GetAirMicBridge()->SetRunning(false);
+            if (!m_bCapture) m_AirMicAdapter->GetAirMicBridge()->SetRunning(false);
             m_pMiniport->StreamClosed(m_ulPin, this);
             m_bUnregisterStream = FALSE;
         }
@@ -114,6 +114,11 @@ Return Value:
     ASSERT(m_SidebandStarted == FALSE);
 #endif  // SYSVAD_BTH_BYPASS
 
+    if (m_AirMicAdapter)
+    {
+        m_AirMicAdapter->Release();
+        m_AirMicAdapter = nullptr;
+    }
     DPF_ENTER(("[CMiniportWaveRTStream::~CMiniportWaveRTStream]"));
 } // ~CMiniportWaveRTStream
 
@@ -235,6 +240,9 @@ Return Value:
         return STATUS_INVALID_PARAMETER;
     }
     m_pMiniport->AddRef();
+    m_AirMicAdapter = m_pMiniport->GetAdapterCommObj();
+    if (!m_AirMicAdapter) return STATUS_INVALID_DEVICE_STATE;
+    m_AirMicAdapter->AddRef();
     if (!NT_SUCCESS(ntStatus))
     {
         return ntStatus;
@@ -1355,7 +1363,7 @@ VOID CMiniportWaveRTStream::WriteBytes(_In_ ULONG byteDisplacement)
     ULONG bytes = min(byteDisplacement, m_ulDmaBufferSize);
     bytes -= bytes % 2UL;
     ULONG offset = static_cast<ULONG>((m_ullLinearPosition + byteDisplacement - bytes) % m_ulDmaBufferSize);
-    AirMicBridge* bridge = m_pMiniport->GetAdapterCommObj()->GetAirMicBridge();
+    AirMicBridge* bridge = m_AirMicAdapter->GetAirMicBridge();
     while (bytes > 0)
     {
         ULONG run = min(bytes, min(m_ulDmaBufferSize - offset, airmic::AudioHistory::MaximumTransfer * 2UL));
@@ -1369,7 +1377,7 @@ VOID CMiniportWaveRTStream::WriteBytes(_In_ ULONG byteDisplacement)
 VOID CMiniportWaveRTStream::ReadBytes(_In_ ULONG byteDisplacement)
 {
     if (m_ulDmaBufferSize == 0 || !m_pDmaBuffer) return;
-    AirMicBridge* bridge = m_pMiniport->GetAdapterCommObj()->GetAirMicBridge();
+    AirMicBridge* bridge = m_AirMicAdapter->GetAirMicBridge();
     const bool protectedContent = InterlockedCompareExchange(&m_AirMicProtected, 0, 0) != 0;
     // This virtual microphone is not a DRM-compliant forwarding path.
     if (protectedContent) bridge->Discontinuity();
@@ -1386,6 +1394,24 @@ VOID CMiniportWaveRTStream::ReadBytes(_In_ ULONG byteDisplacement)
         offset = (offset + run) % m_ulDmaBufferSize;
         bytes -= run;
     }
+}
+
+// Protect transitions and render copies share the stream-position lock. Without
+// this ordering a DPC that cached the old flag could republish protected PCM AFTER
+// the history reset. The helper itself must be NONPAGED while holding the lock.
+#pragma code_seg()
+VOID CMiniportWaveRTStream::SetAirMicProtection(_In_ bool protectedContent)
+{
+    KIRQL previous;
+    KeAcquireSpinLock(&m_PositionSpinLock, &previous);
+    InterlockedExchange(&m_AirMicProtected, protectedContent ? 1 : 0);
+    if (!m_bCapture)
+    {
+        m_AirMicAdapter->GetAirMicBridge()->Discontinuity();
+        // Discard queued DMA content too, including when protection is removed.
+        if (m_pDmaBuffer && m_ulDmaBufferSize) RtlZeroMemory(m_pDmaBuffer, m_ulDmaBufferSize);
+    }
+    KeReleaseSpinLock(&m_PositionSpinLock, previous);
 }
 
 //=============================================================================
@@ -1419,7 +1445,8 @@ Return Value:
     DPF_ENTER(("[CMiniportWaveRT::SetContentId]"));
 
     NTSTATUS    ntStatus;
-    ULONG       ulOldContentId = contentId;
+    ULONG       ulOldContentId = m_ulContentId;
+    if (!drmRights) return STATUS_INVALID_PARAMETER;
 
     m_ulContentId = contentId;
 
@@ -1437,8 +1464,7 @@ Return Value:
     }
 
     // AirMic must never expose copy-protected render content as microphone PCM.
-    InterlockedExchange(&m_AirMicProtected, drmRights->CopyProtect || drmRights->DigitalOutputDisable);
-    if (!m_bCapture) m_pMiniport->GetAdapterCommObj()->GetAirMicBridge()->Discontinuity();
+    SetAirMicProtection(drmRights->CopyProtect || drmRights->DigitalOutputDisable || !NT_SUCCESS(ntStatus));
 
     //
     // From MSDN:

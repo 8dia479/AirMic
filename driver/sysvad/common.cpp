@@ -1511,7 +1511,7 @@ Note:
 {
     DPF_ENTER(("[CAdapterCommon::PowerChangeState]"));
     // AirMic: discard all audio on power-down; no stale microphone tail on resume.
-    if (NewState.DeviceState != PowerDeviceD0) m_AirMicBridge.SetRunning(false);
+    m_AirMicBridge.SetPowered(NewState.DeviceState == PowerDeviceD0);
 
     // Notify all registered miniports of a power state change
     PLIST_ENTRY le = NULL;
@@ -2327,6 +2327,9 @@ CAdapterCommon::Cleanup()
 {
     PAGED_CODE();
     DPF_ENTER(("[CAdapterCommon::Cleanup]"));
+    // A stream may retain an adapter ref until its last handle/DPC closes.
+    // Quarantine its transport before removing cached subdevices.
+    m_AirMicBridge.SetPowered(false);
 
 #ifdef SYSVAD_BTH_BYPASS
     //

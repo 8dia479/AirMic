@@ -43,6 +43,24 @@ void silence_and_broadcast() {
     check(history.Read(a, output.data(), 480) == 0);
     check(history.Read(b, output.data(), 0) == 0);
 }
+void power_transitions() {
+    airmic::AudioHistory history; history.Initialize(); history.SetRunning(true);
+    airmic::CaptureCursor cursor{}; Block input{}, output{}; input.fill(777);
+    history.Write(input.data(), 480);
+    history.SetPowered(false);
+    history.Write(input.data(), 480); // Late DPCs during suspend/removal must not retain speech.
+    check(history.Read(cursor, output.data(), 480) == 0);
+    check(std::all_of(output.begin(), output.end(), [](int16_t x) { return x == 0; }));
+    history.SetPowered(true); // Resume preserves the render RUN intent, not its old samples.
+    check(history.Read(cursor, output.data(), 480) == 0);
+    input.fill(888); history.Write(input.data(), 480);
+    check(history.Read(cursor, output.data(), 480) == 480); check(output == input);
+    history.SetPowered(false); history.SetRunning(false); history.SetPowered(true);
+    history.Write(input.data(), 480);
+    check(history.Read(cursor, output.data(), 480) == 0); // STOP during suspend must remain stopped.
+    history.SetRunning(true); history.Write(input.data(), 480);
+    check(history.Read(cursor, output.data(), 480) == 480); check(output == input);
+}
 void ring_wrap_and_stalled_reader() {
     airmic::AudioHistory history; history.Initialize(); history.SetRunning(true);
     airmic::CaptureCursor fast{}, slow{};
@@ -85,6 +103,6 @@ void externally_synchronized_readers() {
 }
 }
 int main() {
-    silence_and_broadcast(); ring_wrap_and_stalled_reader(); externally_synchronized_readers();
+    silence_and_broadcast(); power_transitions(); ring_wrap_and_stalled_reader(); externally_synchronized_readers();
     std::cout << "PASS: " << checks << " AirMic driver history checks (host only, not kernel/device acceptance)\n";
 }

@@ -439,6 +439,7 @@ public:
     );
 
 
+#pragma code_seg()
     PADAPTERCOMMON GetAdapterCommObj() 
     {
         return m_pAdapterCommon; 

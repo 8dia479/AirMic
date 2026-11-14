@@ -22,7 +22,7 @@ public:
     static constexpr FrameCount MaximumTransfer = 480; // <= 960 bytes per kernel spin-lock hold.
 
     void Initialize() noexcept {
-        written = 0; generation = 1; running = false;
+        written = 0; generation = 1; running = false; powered = true;
     }
     void SetRunning(bool value) noexcept {
         if (running != value) {
@@ -31,12 +31,19 @@ public:
             ++generation; // Invalidates all readers without accessing their stream objects.
         }
     }
+    void SetPowered(bool value) noexcept {
+        if (powered != value) {
+            powered = value;
+            written = 0;
+            ++generation;
+        }
+    }
     void Discontinuity() noexcept {
         written = 0;
         ++generation;
     }
     void Write(const Pcm16* source, FrameCount count) noexcept {
-        if (!running) return;
+        if (!running || !powered) return;
         // The kernel wrapper splits larger DMA regions into bounded transfers.
         // Keep this defensive bound as well; never walk an arbitrary caller length.
         if (count > MaximumTransfer) count = MaximumTransfer;
@@ -48,7 +55,7 @@ public:
     FrameCount Read(CaptureCursor& cursor, Pcm16* destination, FrameCount count) noexcept {
         if (count > MaximumTransfer) count = MaximumTransfer;
         if (count == 0) return 0;
-        if (!running) {
+        if (!running || !powered) {
             cursor.ready = false;
             for (FrameCount i = 0; i < count; ++i) destination[i] = 0;
             return 0;
@@ -78,5 +85,6 @@ private:
     SamplePosition written = 0;
     SamplePosition generation = 1;
     bool running = false;
+    bool powered = true;
 };
 } // namespace airmic

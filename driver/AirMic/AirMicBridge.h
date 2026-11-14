@@ -22,6 +22,13 @@ public:
         KeReleaseSpinLock(&lock, previous);
     }
     _IRQL_requires_max_(DISPATCH_LEVEL)
+    void SetPowered(bool powered) noexcept {
+        KIRQL previous;
+        KeAcquireSpinLock(&lock, &previous);
+        history.SetPowered(powered);
+        KeReleaseSpinLock(&lock, previous);
+    }
+    _IRQL_requires_max_(DISPATCH_LEVEL)
     void Discontinuity() noexcept {
         KIRQL previous;
         KeAcquireSpinLock(&lock, &previous);

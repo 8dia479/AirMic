@@ -72,3 +72,12 @@ Production requires Windows driver signing/submission, a validated catalog cover
 all packaged files, device/format/power/removal/concurrency tests, and an upgrade /
 rollback / uninstall review. No signing key or certificate is committed. No script
 installs this development output, enables test signing or changes Secure Boot.
+
+### Windows 10 minimum and concurrent lifetime review
+
+- Set native `_NT_TARGET_VERSION=0x0A000008` (Windows 10 2004 / 19041) instead of the latest WDK default.
+- Exclude unused sample jack-description-3, audio-posture and hardware-resource-group handlers/types, which require newer Windows headers. AirMic advertises none of those properties.
+- Streams retain a strong adapter reference until timer/DPC quiescence and stream teardown. Adapter cleanup disables the bridge before subdevice removal.
+- Serialize DRM flag/history/DMA invalidation with the render position lock in a nonpaged helper. No DRM-compliant forwarding is claimed.
+- Preserve render RUN intent separately from power state; power-down discards all history and ignores late writes, power-up starts with a fresh generation.
+- These changes still require actual Driver Verifier, power, PnP/removal and multi-client validation on Windows; host-header tests cannot establish those properties.

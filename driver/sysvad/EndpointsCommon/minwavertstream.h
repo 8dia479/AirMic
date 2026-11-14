@@ -91,6 +91,7 @@ public:
     friend EXT_CALLBACK         TimerNotifyRT;
 protected:
     CMiniportWaveRT*            m_pMiniport;
+    PADAPTERCOMMON              m_AirMicAdapter = nullptr; // Strong until all timer callbacks are quiescent.
     ULONG                       m_ulPin;
     BOOLEAN                     m_bCapture;
     BOOLEAN                     m_bUnregisterStream;
@@ -269,6 +270,9 @@ private:
         return m_pAudioModules;
     }
         
+    _IRQL_requires_max_(DISPATCH_LEVEL)
+    VOID SetAirMicProtection(_In_ bool protectedContent);
+
     VOID WriteBytes
     (
         _In_ ULONG ByteDisplacement
