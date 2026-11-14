@@ -26,3 +26,8 @@ __pycache__/
 .idea/
 .vscode/
 *.iml
+
+# Managed app outputs
+/windows/**/bin/
+/windows/**/obj/
+*.csproj.user

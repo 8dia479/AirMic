@@ -63,7 +63,7 @@ class MainActivity : Activity() {
             setPadding(0, dp(7), 0, dp(7))
         }
         column.addView(text("AIR MIC", 34f, true).apply { typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.08f })
-        column.addView(text("WIRELESS MICROPHONE  /  MVP 0.1", 11f).apply { letterSpacing = 0.12f })
+        column.addView(text("WIRELESS MICROPHONE  /  0.2 PREVIEW", 11f).apply { letterSpacing = 0.12f })
         column.addView(text("48 kHz  ·  MONO  ·  PCM16  ·  Wi-Fi", 13f))
         column.addView(text("PC 연결", 21f, true).apply { setPadding(0, dp(24), 0, dp(4)) })
         column.addView(text("Windows PC IPv4 주소"))
@@ -122,7 +122,7 @@ class MainActivity : Activity() {
         slider("저음 EQ · 180 Hz", "low", -12, 12)
         slider("중음 EQ · 1.5 kHz", "mid", -12, 12)
         slider("고음 EQ · 4.5 kHz", "high", -12, 12)
-        column.addView(text("PC: CABLE Input으로 출력 → Discord/게임: CABLE Output을 마이크로 선택하세요.\n\n화면을 꺼도 알림 서비스가 마이크를 사용합니다. 종료하려면 전송 중지 또는 알림의 중지 버튼을 누르세요.\n\n암호화되지 않은 LAN 전용 전송입니다. 신뢰하는 Wi-Fi에서만 사용하세요. 30–50 ms는 목표이며 실측값이 아닙니다.", 12f))
+        column.addView(text("PC: AirMic 전용 드라이버가 설치돼 있으면 Discord/게임에서 AirMic Microphone을 선택하세요. 드라이버가 없는 수신 진단 모드는 시스템 마이크가 아닙니다.\n\n화면을 꺼도 알림 서비스가 마이크를 사용합니다. 종료하려면 전송 중지 또는 알림의 중지 버튼을 누르세요.\n\n암호화되지 않은 LAN 전용 전송입니다. 신뢰하는 Wi-Fi에서만 사용하세요. 30–50 ms는 목표이며 실측값이 아닙니다.", 12f))
         // Target 35 enforces edge-to-edge; keep controls clear of bars and the IME.
         scroll.setOnApplyWindowInsetsListener { view, insets ->
             if (Build.VERSION.SDK_INT >= 30) {

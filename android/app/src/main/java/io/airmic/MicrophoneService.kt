@@ -42,7 +42,7 @@ class MicrophoneService : Service() {
         private const val CHANNEL = "microphone"
         private const val NOTIFICATION = 1
         // Process-wide serialization prevents an old Service.onDestroy cleanup from
-        // stopping a newly created service's native engine or unbinding its Wi-Fi.
+        // stopping a newly created service's capture engine or unbinding its Wi-Fi.
         private val controller = ScheduledThreadPoolExecutor(1, ThreadFactory { task ->
             Thread(task, "AirMic-control")
         }).apply { removeOnCancelPolicy = true }
@@ -59,8 +59,8 @@ class MicrophoneService : Service() {
     private var monitor: ScheduledFuture<*>? = null
     @Volatile private var destroyed = false
     @Volatile private var requested = false
-    private var nativeRunning = false
-    private var nativeStartedAt = 0L
+    private var engineRunning = false
+    private var engineStartedAt = 0L
     private var boundNetwork: Network? = null
     private var host = ""
     private var port = 49000
@@ -101,11 +101,12 @@ class MicrophoneService : Service() {
             }
             ACTION_CONFIG -> {
                 if (requested) controller.execute {
+                    if (destroyed || currentOwner != ownerId) return@execute
                     try {
                         if (!DspPreferences.load(getSharedPreferences(PREFERENCES, MODE_PRIVATE)).applyToEngine()) {
                             ui = ui.copy(detail = "DSP 설정 큐가 가득 찼습니다. 다시 조정하세요.")
                         }
-                    } catch (e: LinkageError) { fatal("네이티브 라이브러리 오류: ${e.message}") }
+                    } catch (e: LinkageError) { fatal("오디오 엔진 오류: ${e.message}") }
                 } else stopSelf(startId)
             }
             ACTION_START -> {
@@ -125,11 +126,11 @@ class MicrophoneService : Service() {
                     requested = true
                     controller.execute {
                         try {
-                            if (nativeRunning) NativeBridge.stop()
-                            nativeRunning = false
+                            if (engineRunning) AudioEngine.stop()
+                            engineRunning = false
                             host = targetHost; port = targetPort; failures = 0; retryAt = 0
                             guardedTick()
-                        } catch (e: LinkageError) { fatal("네이티브 라이브러리 로드 실패: ${e.message}") }
+                        } catch (e: LinkageError) { fatal("오디오 엔진 오류: ${e.message}") }
                     }
                 } catch (e: Exception) {
                     fatal("마이크 서비스 시작 실패: ${e.message}")
@@ -152,14 +153,14 @@ class MicrophoneService : Service() {
     }
 
     private fun guardedTick() {
-        if (destroyed || !requested) return
+        if (destroyed || !requested || currentOwner != ownerId) return
         try {
             tick()
         } catch (e: LinkageError) {
-            fatal("네이티브 라이브러리 로드 실패: ${e.message}")
+            fatal("오디오 엔진 오류: ${e.message}")
         } catch (e: Exception) {
-            runCatching { NativeBridge.stop() }
-            nativeRunning = false
+            runCatching { AudioEngine.stop() }
+            engineRunning = false
             scheduleRetry("엔진 오류: ${e.message}")
         }
     }
@@ -167,32 +168,32 @@ class MicrophoneService : Service() {
     private fun tick() {
         val wifi = chooseWifi()
         if (wifi == null) {
-            if (nativeRunning) NativeBridge.stop()
-            nativeRunning = false
+            if (engineRunning) AudioEngine.stop()
+            engineRunning = false
             if (boundNetwork != null) connectivity.bindProcessToNetwork(null)
             boundNetwork = null; retryAt = 0
             publish(UiState(true, "Wi-Fi 대기", "모바일 데이터는 사용하지 않습니다. PC와 같은 Wi-Fi에 연결하세요."))
             return
         }
         if (boundNetwork != wifi) {
-            if (nativeRunning) NativeBridge.stop()
-            nativeRunning = false
+            if (engineRunning) AudioEngine.stop()
+            engineRunning = false
             if (!connectivity.bindProcessToNetwork(wifi)) throw IllegalStateException("Wi-Fi 네트워크 바인딩 실패")
             boundNetwork = wifi; retryAt = 0
         }
-        if (!nativeRunning) {
+        if (!engineRunning) {
             if (SystemClock.elapsedRealtime() < retryAt) return
             DspPreferences.load(getSharedPreferences(PREFERENCES, MODE_PRIVATE)).applyToEngine()
-            val error = NativeBridge.start(host, port)
+            val error = AudioEngine.start(host, port)
             if (error != null) { scheduleRetry(error); return }
-            nativeRunning = true; nativeStartedAt = SystemClock.elapsedRealtime()
+            engineRunning = true; engineStartedAt = SystemClock.elapsedRealtime()
         }
-        if (SystemClock.elapsedRealtime() - nativeStartedAt >= 30_000) failures = 0
-        val s = NativeBridge.stats()
-        check(s.size == 17) { "네이티브 통계 버전 불일치" }
+        if (SystemClock.elapsedRealtime() - engineStartedAt >= 30_000) failures = 0
+        val s = AudioEngine.stats()
+        check(s.size == 17) { "오디오 통계 버전 불일치" }
         if (s[0] == 3L) {
-            val error = NativeBridge.lastError()
-            NativeBridge.stop(); nativeRunning = false
+            val error = AudioEngine.lastError()
+            AudioEngine.stop(); engineRunning = false
             scheduleRetry(error)
             return
         }
@@ -203,8 +204,9 @@ class MicrophoneService : Service() {
         val statistics = "캡처 ${s[1]} / 전송 ${s[3]} / PC 수신 ${s[15]} 패킷\n" +
             "큐 손실 ${s[2]} · 오래된 프레임 폐기 ${s[5]} · 송신 오류 ${s[4]}\n" +
             "UDP ACK RTT $rtt (종단 간 오디오 지연 아님)\n" +
-            "Oboe burst ${s[9]} / buffer ${s[10]} frames · ${if (s[11] == 1L) "Exclusive" else "Shared"}\n" +
-            "입력 xrun ${s[8]} (-1: 미지원) · 송신 대기 ${s[16]} · errno ${s[14]}"
+            "AudioRecord read ${s[9]} / buffer ${s[10]} frames · ${if (s[11] == 1L) "Float" else "PCM16"}\n" +
+            "${AudioEngine.sourceName()}\n" +
+            "입력 xrun ${s[8]} (-1: 미지원) · 송신 대기 ${s[16]} · 네트워크 오류 ${s[14]}"
         publish(UiState(true, status, detail, statistics, s[12].toInt().coerceIn(0, 1000)))
     }
 
@@ -264,9 +266,11 @@ class MicrophoneService : Service() {
         monitor?.cancel(false)
         if (callbackRegistered) runCatching { connectivity.unregisterNetworkCallback(networkCallback) }
         controller.execute {
-            runCatching { NativeBridge.stop() }
-            nativeRunning = false
-            runCatching { connectivity.bindProcessToNetwork(null) }
+            if (currentOwner == ownerId) {
+                runCatching { AudioEngine.stop() }
+                runCatching { connectivity.bindProcessToNetwork(null) }
+            }
+            engineRunning = false
             wakeLock?.let { if (it.isHeld) it.release() }
             wifiLock?.let { if (it.isHeld) it.release() }
             if (currentOwner == ownerId && ui.phase != "오류") ui = UiState(false, "중지됨", "마이크 캡처와 UDP 전송을 종료했습니다.")

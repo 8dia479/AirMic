@@ -1,3 +1,6 @@
+> **0.1 C++/Oboe/VB-CABLE 경로의 역사적 기록입니다.** 현재 0.2 C#/Kotlin 전환과
+> 검증 상태는 [MIGRATION_0_2.md](MIGRATION_0_2.md), 빌드는 [BUILD.md](BUILD.md)를 보세요.
+
 # MVP 0.1 실기기 인수 시험 — 아직 실행하지 않음
 
 **대상:** Galaxy Z Flip6 + Windows 10/11 x64 + VB-CABLE + 동일 LAN.

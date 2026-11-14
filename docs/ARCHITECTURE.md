@@ -1,3 +1,6 @@
+> **0.1 C++/Oboe/VB-CABLE 경로의 역사적 기록입니다.** 현재 0.2 C#/Kotlin 전환과
+> 검증 상태는 [MIGRATION_0_2.md](MIGRATION_0_2.md), 빌드는 [BUILD.md](BUILD.md)를 보세요.
+
 # AirMic MVP 0.1 Architecture
 
 ## 1. 처리 경로와 소유권

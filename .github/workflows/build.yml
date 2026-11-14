@@ -1,19 +1,15 @@
 name: Build and test AirMic
-
 on:
   push:
   pull_request:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  native:
+  managed-core:
     strategy:
       fail-fast: false
       matrix:
@@ -21,42 +17,55 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-      - name: Build
-        run: cmake --build build --config Release --parallel 2
-      - name: Unit and allocation tests
-        run: ctest --test-dir build -C Release --output-on-failure
-      - name: Actual UDP impairment test (generated PCM / null sink)
-        if: runner.os == 'Linux'
-        run: ./build/airmic_loopback --seconds 10 --impair
-      - name: Windows executable smoke (no audio hardware)
-        if: runner.os == 'Windows'
-        run: ./build/windows/Release/airmic_receiver.exe --help
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Managed protocol / jitter / UDP / allocation tests
+        shell: pwsh
+        run: |
+          dotnet run --project windows/AirMic.Tests -c Release *> managed-tests.log
+          $code = $LASTEXITCODE
+          Get-Content managed-tests.log
+          if ($code -ne 0) {
+            $tail = (Get-Content managed-tests.log -Tail 35) -join '%0A'
+            Write-Host "::error title=Managed build/test failure::$tail"
+            exit $code
+          }
       - uses: actions/upload-artifact@v4
-        if: runner.os == 'Windows'
+        if: always()
         with:
-          name: airmic-windows-x64-unsigned
-          path: build/windows/Release/airmic_receiver.exe
-
-  sanitizers:
-    runs-on: ubuntu-latest
+          name: managed-test-log-${{ matrix.os }}
+          path: managed-tests.log
+  windows-gui:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DAIRMIC_SANITIZER=address
-      - run: cmake --build build --parallel 2
-      - run: ctest --test-dir build --output-on-failure
-
-  measurement-tools:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-dotnet@v4
         with:
-          python-version: '3.11'
-      - run: pip install -r tools/requirements-latency.txt
-      - run: python -m unittest discover -s tests -p 'python_test_*.py' -v
-
+          dotnet-version: '10.0.x'
+      - name: WPF build (no C++ workload needed)
+        shell: pwsh
+        run: |
+          dotnet build windows/AirMic.sln -c Release *> windows-build.log
+          $code = $LASTEXITCODE
+          Get-Content windows-build.log
+          if ($code -ne 0) {
+            $tail = (Get-Content windows-build.log -Tail 35) -join '%0A'
+            Write-Host "::error title=Windows build failure::$tail"
+            exit $code
+          }
+      - name: Create and close actual WPF window (no audio hardware test)
+        shell: pwsh
+        run: |
+          $app = Start-Process windows/AirMic.App/bin/Release/net10.0-windows/AirMic.exe -ArgumentList '--smoke-ui' -PassThru
+          if (-not $app.WaitForExit(30000)) { $app.Kill(); throw 'WPF smoke timed out' }
+          if ($app.ExitCode -ne 0) { throw "WPF smoke failed: $($app.ExitCode)" }
+      - name: Publish standalone diagnostic executable (NO bundled driver)
+        run: dotnet publish windows/AirMic.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=embedded -o artifacts/windows-diagnostic
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AirMic-windows-x64-DIAGNOSTIC-NO-DRIVER
+          path: artifacts/windows-diagnostic/AirMic.exe
   android:
     runs-on: ubuntu-latest
     steps:
@@ -65,14 +74,39 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install pinned Android toolchain (runner licenses must be accepted)
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
-      - name: Verify Gradle wrapper JAR
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK only (no NDK/CMake/Oboe)
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Verify Gradle wrapper
         run: echo '2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046  android/gradle/wrapper/gradle-wrapper.jar' | sha256sum --check
-      - name: Build and lint (not a real-device test)
+      - name: Kotlin JVM tests / APK / lint
         working-directory: android
-        run: ./gradlew :app:assembleDebug :app:lintDebug --no-daemon --stacktrace
+        run: |
+          set +e
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --no-daemon --stacktrace > ../android-build.log 2>&1
+          result=$?
+          cat ../android-build.log
+          if [ "$result" -ne 0 ]; then
+            python3 -c 'from pathlib import Path; s=Path("../android-build.log").read_text(); lines=[x for x in s.splitlines() if any(y in x for y in ("e: "," error:","Error:","What went wrong","Execution failed"))]; text="\n".join(lines or s.splitlines()[-35:])[-6000:]; print("::error title=Android build failure::"+text.replace("%","%25").replace("\n","%0A").replace("\r","%0D"))'
+            exit "$result"
+          fi
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: airmic-android-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: android-build-results
+          path: |
+            android-build.log
+            android/app/build/reports/
+            android/app/build/outputs/apk/debug/app-debug.apk
+  legacy-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel 2
+      - run: ctest --test-dir build --output-on-failure
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r tools/requirements-latency.txt
+      - run: python -m unittest discover -s tests -p 'python_test_*.py' -v

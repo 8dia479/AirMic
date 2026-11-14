@@ -1,0 +1,45 @@
+<Window x:Class="AirMic.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="AirMic · Wireless Microphone"
+        Width="920" Height="850" MinWidth="760" MinHeight="680" Background="#0C161C"
+        Foreground="#E8F3F4" FontFamily="Segoe UI, Malgun Gothic" FontSize="14">
+  <Window.Resources>
+    <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+    <Style TargetType="Button"><Setter Property="Padding" Value="16,9"/><Setter Property="Margin" Value="0,3,8,3"/><Setter Property="Background" Value="#56E1C3"/><Setter Property="Foreground" Value="#08201F"/><Setter Property="BorderThickness" Value="0"/></Style>
+    <Style TargetType="TextBox"><Setter Property="Padding" Value="9"/><Setter Property="Margin" Value="0,6,12,10"/><Setter Property="Background" Value="#20323D"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="#36505C"/></Style>
+    <Style TargetType="ComboBox"><Setter Property="Padding" Value="8"/><Setter Property="Margin" Value="0,6,0,10"/><Setter Property="Foreground" Value="#10262D"/></Style>
+    <Style x:Key="Card" TargetType="Border"><Setter Property="Padding" Value="22"/><Setter Property="Margin" Value="0,0,0,16"/><Setter Property="CornerRadius" Value="12"/><Setter Property="Background" Value="#15262F"/></Style>
+  </Window.Resources>
+  <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="32,26">
+    <DockPanel Margin="0,0,0,20"><StackPanel><TextBlock Text="AIR MIC" FontSize="34" FontWeight="Bold"/>
+      <TextBlock Text="PHONE → WI-FI → WINDOWS  /  0.2 PREVIEW" Foreground="#9FB8C2" Margin="0,6,0,0"/></StackPanel>
+      <TextBlock Text="C# · .NET / Kotlin" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#56E1C3"/></DockPanel>
+    <Border Style="{StaticResource Card}"><StackPanel>
+      <TextBlock Text="01  연결 설정" FontSize="20" FontWeight="SemiBold"/>
+      <TextBlock Text="휴대폰 앱에 아래 PC의 LAN IPv4와 같은 UDP 포트를 입력하세요." Foreground="#9FB8C2" Margin="0,8"/>
+      <DockPanel><Button Content="주소 복사" DockPanel.Dock="Right" Click="CopyAddress_Click"/><TextBox x:Name="Addresses" IsReadOnly="True"/></DockPanel>
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="140"/><ColumnDefinition Width="*"/><ColumnDefinition Width="210"/></Grid.ColumnDefinitions>
+        <StackPanel><TextBlock Text="UDP 포트"/><TextBox x:Name="Port" Text="49000"/></StackPanel>
+        <StackPanel Grid.Column="1"><TextBlock Text="허용할 휴대폰 IPv4 (비우면 첫 송신자)"/><TextBox x:Name="AllowedIp"/></StackPanel>
+        <StackPanel Grid.Column="2"><TextBlock Text="지터 버퍼"/><ComboBox x:Name="JitterMode" SelectedIndex="0">
+          <ComboBoxItem Content="자동 · 2–8 프레임"/><ComboBoxItem Content="고정 · 2 프레임"/><ComboBoxItem Content="고정 · 4 프레임"/><ComboBoxItem Content="고정 · 8 프레임"/>
+        </ComboBox></StackPanel>
+      </Grid>
+    </StackPanel></Border>
+    <Border Style="{StaticResource Card}"><StackPanel>
+      <DockPanel><TextBlock Text="02  마이크 / 출력" FontSize="20" FontWeight="SemiBold"/><Button Content="장치 새로고침" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="Refresh_Click" x:Name="RefreshButton"/></DockPanel>
+      <TextBlock x:Name="DriverStatus" Foreground="#FFD58A" Margin="0,10"/>
+      <ComboBox x:Name="Output"/>
+      <TextBlock Text="일반 스피커 선택은 청취용이며 시스템 마이크가 아닙니다. 피드백·하울링에 주의하세요." Foreground="#9FB8C2"/>
+      <DockPanel Margin="0,14,0,4"><TextBlock x:Name="VolumeLabel" Text="출력 음량 · 100%" Width="160"/><Slider x:Name="Volume" Minimum="0" Maximum="150" Value="100" TickFrequency="10" ValueChanged="Volume_Changed" VerticalAlignment="Center"/></DockPanel>
+      <Button x:Name="InstallDriverButton" Content="AirMic 전용 드라이버 설치 / 복구 (관리자 승인)" HorizontalAlignment="Left" Click="InstallDriver_Click"/>
+    </StackPanel></Border>
+    <Border Style="{StaticResource Card}"><StackPanel>
+      <DockPanel><Button x:Name="StartButton" Content="수신 시작" Click="Start_Click"/><Button x:Name="StopButton" Content="중지" Click="Stop_Click" IsEnabled="False"/>
+        <TextBlock x:Name="State" Text="대기 중" FontSize="21" VerticalAlignment="Center" HorizontalAlignment="Right"/></DockPanel>
+      <ProgressBar x:Name="Meter" Minimum="0" Maximum="1000" Height="8" Margin="0,14,0,10" Foreground="#56E1C3"/>
+      <TextBlock x:Name="Statistics" FontFamily="Consolas, Malgun Gothic" Foreground="#B1C8D0"/>
+      <TextBlock x:Name="Notice" Foreground="#FFD58A" Margin="0,12,0,0"/>
+    </StackPanel></Border>
+    <TextBlock Text="48 kHz · MONO · PCM16 · 10 ms UDP  /  신뢰하는 LAN 전용 · 암호화/인증 없음&#10;ACK는 패킷 수신 확인이며 실제 마이크 재생·종단 간 지연을 증명하지 않습니다." Foreground="#91AAB5" FontSize="12"/>
+  </StackPanel></ScrollViewer>
+</Window>
