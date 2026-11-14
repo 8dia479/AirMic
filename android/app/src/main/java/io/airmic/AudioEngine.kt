@@ -122,9 +122,13 @@ internal object AudioEngine {
             var used = 0
             try {
                 while (!stopping) {
+                    // Complete the current 480-sample wire frame before asking AudioRecord
+                    // for another chunk. A full-size read after a partial read could
+                    // overrun frame.samples when used > 0.
+                    val remaining = AudioProtocol.SAMPLES - used
                     val count = if (encoding == AudioFormat.ENCODING_PCM_FLOAT)
-                        audio.read(floats, 0, floats.size, AudioRecord.READ_BLOCKING)
-                    else audio.read(shorts, 0, shorts.size, AudioRecord.READ_BLOCKING)
+                        audio.read(floats, 0, remaining, AudioRecord.READ_BLOCKING)
+                    else audio.read(shorts, 0, remaining, AudioRecord.READ_BLOCKING)
                     if (count < 0) {
                         if (!stopping) { audioError.set(count.toLong()); throw IllegalStateException("AudioRecord read 오류 $count") }
                         break
