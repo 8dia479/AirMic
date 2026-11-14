@@ -38,7 +38,11 @@ class DspStabilityTest {
 
         val loud = FloatArray(AudioProtocol.SAMPLES) { if (it % 2 == 0) 4f else -4f }
         dsp.process(loud)
-        assertTrue(loud.all { it.isFinite() && abs(it) <= 0.892f })
+        val afterLoud = FloatArray(AudioProtocol.SAMPLES)
+        dsp.process(afterLoud)
+        assertTrue(afterLoud.all { it.isFinite() && abs(it) <= 0.892f })
+        assertTrue("the delayed loud hop must actually exercise the limiter",
+            afterLoud.any { abs(it) >= 0.88f })
     }
 
     @Test
