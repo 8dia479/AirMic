@@ -9,6 +9,7 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.media.AudioManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -106,7 +107,7 @@ class MicrophoneService : Service() {
                         if (!DspPreferences.load(getSharedPreferences(PREFERENCES, MODE_PRIVATE)).applyToEngine()) {
                             ui = ui.copy(detail = "DSP 설정 큐가 가득 찼습니다. 다시 조정하세요.")
                         }
-                    } catch (e: LinkageError) { fatal("오디오 엔진 오류: ${e.message}") }
+                    } catch (e: Exception) { fatal("DSP 설정 실패: ${e.message}") }
                 } else stopSelf(startId)
             }
             ACTION_START -> {
@@ -125,12 +126,15 @@ class MicrophoneService : Service() {
                     ui = UiState(true, "시작 중", "$targetHost:$targetPort")
                     requested = true
                     controller.execute {
+                        if (destroyed || !requested || currentOwner != ownerId) return@execute
                         try {
-                            if (engineRunning) AudioEngine.stop()
+                            // The process-wide controller owns the single capture engine, including
+                            // cleanup from a prior service instance that may already be destroyed.
+                            AudioEngine.stop()
                             engineRunning = false
                             host = targetHost; port = targetPort; failures = 0; retryAt = 0
                             guardedTick()
-                        } catch (e: LinkageError) { fatal("오디오 엔진 오류: ${e.message}") }
+                        } catch (e: Exception) { fatal("마이크 시작 실패: ${e.message}") }
                     }
                 } catch (e: Exception) {
                     fatal("마이크 서비스 시작 실패: ${e.message}")
@@ -184,7 +188,9 @@ class MicrophoneService : Service() {
         if (!engineRunning) {
             if (SystemClock.elapsedRealtime() < retryAt) return
             DspPreferences.load(getSharedPreferences(PREFERENCES, MODE_PRIVATE)).applyToEngine()
-            val error = AudioEngine.start(host, port)
+            val unprocessed = getSystemService(AudioManager::class.java)
+                .getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED) == "true"
+            val error = AudioEngine.start(host, port, unprocessed)
             if (error != null) { scheduleRetry(error); return }
             engineRunning = true; engineStartedAt = SystemClock.elapsedRealtime()
         }

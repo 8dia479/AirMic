@@ -26,6 +26,10 @@ jobs:
           dotnet run --project windows/AirMic.Tests -c Release *> managed-tests.log
           $code = $LASTEXITCODE
           Get-Content managed-tests.log
+          if ($code -eq 0) {
+            $summary = (Get-Content managed-tests.log | Where-Object { $_ -match 'PASS:|allocation guard:' }) -join '%0A'
+            Write-Host "::notice title=Managed core result::$summary"
+          }
           if ($code -ne 0) {
             $tail = (Get-Content managed-tests.log -Tail 35) -join '%0A'
             Write-Host "::error title=Managed build/test failure::$tail"
@@ -67,16 +71,32 @@ jobs:
           name: AirMic-windows-x64-DIAGNOSTIC-NO-DRIVER
           path: artifacts/windows-diagnostic/AirMic.exe
   android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - name: Install Android SDK only (no NDK/CMake/Oboe)
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Use runner Android SDK (no obsolete tools package, NDK or CMake)
+        shell: bash
+        run: |
+          set -o pipefail
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          manager="$sdk/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$manager" ]; then
+            echo "::error::Preinstalled Android SDK command-line tools missing: $manager"
+            exit 1
+          fi
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "$sdk/platform-tools" >> "$GITHUB_PATH"
+          # Hosted images already have accepted licenses; install only what this app needs.
+          if ! "$manager" --sdk_root="$sdk" "platforms;android-35" "build-tools;35.0.0" > sdk-install.log 2>&1; then
+            cat sdk-install.log
+            python3 -c 'from pathlib import Path; s=Path("sdk-install.log").read_text()[-6000:]; print("::error title=SDK setup::"+s.replace("%","%25").replace("\n","%0A").replace("\r","%0D"))'
+            exit 1
+          fi
+          cat sdk-install.log
       - name: Verify Gradle wrapper
         run: echo '2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046  android/gradle/wrapper/gradle-wrapper.jar' | sha256sum --check
       - name: Kotlin JVM tests / APK / lint

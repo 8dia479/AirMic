@@ -4,20 +4,25 @@ AirMic's own source is MIT licensed (see LICENSE). Upstream notices remain intac
 
 | Component | Source / exact version | License | Shipped here |
 |---|---|---|---|
-| Oboe | https://github.com/google/oboe, 1.9.3 (`b15f5e39c01a7ada306d959e5129620b145fb8b4`) | Apache-2.0 | Gradle dependency, not vendored; linked into Android build |
 | Gradle wrapper | https://github.com/gradle/gradle, v8.10.2 | Apache-2.0 | `android/gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar` |
 | Kotlin / Android Gradle Plugin | Kotlin 2.0.21 / AGP 8.7.3 | Apache-2.0 | Build dependencies, not vendored |
 | NumPy | 2.2.6, https://github.com/numpy/numpy | BSD-3-Clause + bundled dependency notices | Optional developer WAV analysis dependency, not vendored |
-| VB-CABLE | https://vb-audio.com/Cable/ | VB-Audio proprietary/donationware terms | NOT included; user installs separately |
+| .NET / WPF | .NET 10, https://github.com/dotnet/runtime and https://github.com/dotnet/wpf | MIT + runtime third-party notices | SDK/framework references; runtime bundled only in self-contained Windows publish |
+| JUnit | 4.13.2, https://github.com/junit-team/junit4 | EPL-1.0 | Android JVM tests only; not bundled in APK |
 
 Apache-2.0 license text is in `docs/licenses/Apache-2.0.txt`. Gradle wrapper JAR SHA-256:
 `2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046`.
 
-The optional Linux-produced Windows diagnostic binary links Zig 0.13.0's
-LLVM libc++/libc++abi/libunwind and MinGW-w64 runtime, and depends on the Windows
-Universal CRT. It is not a signed or Windows-tested release. Its accompanying
-`artifacts/THIRD_PARTY_CROSS_BINARY.txt` describes these runtime licenses. Normal
-MSVC builds use the installed Microsoft toolchain/runtime and its redistribution terms.
+The 0.2 production app build no longer includes Oboe, Android JNI/NDK, the old
+native Windows CLI or the historical Zig/MinGW cross-built executable. No
+VB-CABLE driver/app is bundled or required as a substitute for the planned AirMic
+driver. The retained `shared/` C++ code is a regression reference, not an app dependency.
+
+Self-contained Windows distributions must preserve .NET's accompanying license
+and third-party notices. `tools/publish_windows.ps1` copies the project's notices;
+release packaging must also include the notices supplied with its exact runtime.
+The MIT .NET runtime licensing does not cover Windows itself, the proprietary
+Android/Windows SDK/WDK tools or third-party driver signing services.
 
 ## Reviewed candidates — NOT integrated or bundled
 

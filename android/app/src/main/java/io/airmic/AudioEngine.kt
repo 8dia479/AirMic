@@ -28,14 +28,15 @@ internal object AudioEngine {
         current?.configuration?.set(desired)
         return true
     }
-    fun start(host: String, port: Int): String? {
+    fun start(host: String, port: Int, unprocessedSupported: Boolean): String? {
         stop(); error = ""
         return try {
             require(port in 1..65535) { "포트는 1~65535 범위여야 합니다." }
             val parts = host.split('.')
-            require(parts.size == 4 && parts.all { it.isNotEmpty() && it.length <= 3 && it.toIntOrNull() in 0..255 }) { "숫자 IPv4 주소가 필요합니다." }
+            require(parts.size == 4 && parts.all { it.length in 1..3 && it.all { c -> c in '0'..'9' } && it.toIntOrNull() in 0..255 }) { "숫자 IPv4 주소가 필요합니다." }
+            require(parts[0].toInt() in 1..223 && parts[0].toInt() != 127 && host != "255.255.255.255") { "PC의 LAN IPv4 주소가 필요합니다." }
             val address = InetAddress.getByAddress(ByteArray(4) { parts[it].toInt().toByte() })
-            val session = Session(address, port, desired)
+            val session = Session(address, port, desired, unprocessedSupported)
             current = session
             session.start()
             null
@@ -54,7 +55,7 @@ internal object AudioEngine {
     fun lastError(): String = current?.error?.takeIf { it.isNotEmpty() } ?: error
     private fun nowUs() = SystemClock.elapsedRealtimeNanos() / 1000
 
-    private class Session(address: InetAddress, port: Int, initial: DspConfig) {
+    private class Session(address: InetAddress, port: Int, initial: DspConfig, private val unprocessedSupported: Boolean) {
         val configuration = AtomicReference(initial)
         private val queue = CaptureQueue()
         private val channel = DatagramChannel.open()
@@ -78,8 +79,12 @@ internal object AudioEngine {
         @android.annotation.SuppressLint("MissingPermission") // Service checks RECORD_AUDIO; SecurityException is reported to control.
         fun start() {
             var opened: AudioRecord? = null
-            for (source in intArrayOf(MediaRecorder.AudioSource.UNPROCESSED, MediaRecorder.AudioSource.VOICE_RECOGNITION)) {
+            val sources = if (unprocessedSupported)
+                intArrayOf(MediaRecorder.AudioSource.UNPROCESSED, MediaRecorder.AudioSource.VOICE_RECOGNITION)
+            else intArrayOf(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+            for (source in sources) {
                 for (format in intArrayOf(AudioFormat.ENCODING_PCM_FLOAT, AudioFormat.ENCODING_PCM_16BIT)) {
+                    var candidate: AudioRecord? = null
                     try {
                         val minimum = AudioRecord.getMinBufferSize(AudioProtocol.RATE, AudioFormat.CHANNEL_IN_MONO, format)
                         if (minimum <= 0) continue
@@ -88,19 +93,19 @@ internal object AudioEngine {
                                 .setEncoding(format).build(),
                         ).setBufferSizeInBytes(max(minimum * 2, AudioProtocol.SAMPLES * 4 * 4))
                         if (Build.VERSION.SDK_INT >= 30) builder.setPrivacySensitive(true)
-                        val candidate = builder.build()
-                        if (candidate.state != AudioRecord.STATE_INITIALIZED || candidate.sampleRate != AudioProtocol.RATE || candidate.channelCount != 1) {
-                            candidate.release(); continue
-                        }
+                        candidate = builder.build()
+                        if (candidate.state != AudioRecord.STATE_INITIALIZED || candidate.sampleRate != AudioProtocol.RATE || candidate.channelCount != 1) continue
+                        candidate.startRecording()
+                        if (candidate.recordingState != AudioRecord.RECORDSTATE_RECORDING) continue
                         opened = candidate; encoding = format; preset = source; break
                     } catch (_: IllegalArgumentException) { }
+                    catch (_: IllegalStateException) { }
+                    finally { if (candidate !== opened) candidate?.release() }
                 }
                 if (opened != null) break
             }
             val audio = opened ?: throw IllegalStateException("48 kHz mono AudioRecord 입력을 열 수 없습니다.")
             record = audio; bufferFrames = audio.bufferSizeInFrames
-            audio.startRecording()
-            check(audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "마이크 녹음 시작 실패" }
             state.set(2)
             sender = Thread({ sendLoop() }, "AirMic-DSP-UDP").also { it.start() }
             capture = Thread({ captureLoop(audio) }, "AirMic-capture").also { it.start() }
@@ -176,6 +181,7 @@ internal object AudioEngine {
                         val now = nowUs(); val sample = now - sentTimes[index]
                         if (sample !in 0L..5_000_000L) continue
                         val previous = rtt.get(); rtt.set(if (previous == 0L) sample else (previous * 7 + sample) / 8)
+                        valid[index] = false // Ignore replayed receipts, even from the connected peer.
                         lastAck.set(now); accepted.set(ack.accepted)
                     }
                     if (queue.size() == 0) LockSupport.parkNanos(1_000_000)
