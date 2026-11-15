@@ -35,7 +35,7 @@ if not exist "%SOLUTION%" (
 echo [1/1] Building AirMic Windows solution...
 echo [INFO] Configuration: Release / x64
 echo.
-dotnet build "%SOLUTION%" --configuration Release --arch x64
+dotnet build "%SOLUTION%" --configuration Release
 if errorlevel 1 (
     echo.
     echo [ERROR] Windows build failed.
